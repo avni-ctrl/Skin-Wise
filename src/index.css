@@ -1,0 +1,189 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --bg: #fbf9f6;
+  --card: #fffdf9;
+  --ink: #1c3f30;
+  --ink2: #8c8a82;
+  --accent: #7a9a82;
+  --on-accent: #fbf9f6;
+  --gold: #c9a227;
+  --gold2: #a99148;
+  --amber: #c79a4a;
+  --terra: #b96b5a;
+  --line: rgba(28, 63, 48, 0.12);
+  --shadow: 0 10px 40px -12px rgba(28, 63, 48, 0.18);
+}
+
+.dark {
+  --bg: #163024;
+  --card: #1f3d30;
+  --ink: #fbf9f6;
+  --ink2: #b4b0a4;
+  --accent: #c9a227;
+  --on-accent: #163024;
+  --gold: #c9a227;
+  --gold2: #a99148;
+  --amber: #c79a4a;
+  --terra: #c98070;
+  --line: rgba(251, 249, 246, 0.14);
+  --shadow: 0 10px 40px -12px rgba(0, 0, 0, 0.45);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink2: var(--ink2);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-gold: var(--gold);
+  --color-gold2: var(--gold2);
+  --color-amber: var(--amber);
+  --color-terra: var(--terra);
+  --color-line: var(--line);
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-script: "Sacramento", cursive;
+  --font-sans: "DM Sans", system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Room-lighting theme change: everything fades together, never a reload. */
+body,
+.theming,
+.theming * {
+  transition:
+    background-color 0.55s ease,
+    border-color 0.55s ease,
+    color 0.55s ease,
+    fill 0.55s ease,
+    stroke 0.55s ease;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--gold) 30%, transparent);
+}
+
+/* Signature editorial headline: short serif lines, one italic accent word. */
+.headline {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.04;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+.headline em {
+  font-style: italic;
+  font-weight: 500;
+  color: var(--gold2);
+}
+
+.smallcaps {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-weight: 600;
+}
+
+.tag-caps {
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  font-size: 0.68rem;
+  color: var(--gold2);
+}
+
+/* Film grain — ~2.5%, sitewide, above backdrops, below nothing interactive. */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: -50%;
+  z-index: 70;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain-shift 9s steps(6) infinite;
+}
+@keyframes grain-shift {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-2%, 3%); }
+  40% { transform: translate(3%, -2%); }
+  60% { transform: translate(-3%, -3%); }
+  80% { transform: translate(2%, 2%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .grain::after { animation: none; }
+  html { scroll-behavior: auto; }
+}
+
+/* Soft-dot custom cursor (desktop only, enabled via .has-cursor-dot on html) */
+.has-cursor-dot,
+.has-cursor-dot a,
+.has-cursor-dot button,
+.has-cursor-dot [role="button"] {
+  cursor: none;
+}
+
+/* Amoeba morphing shape */
+@keyframes amoeba {
+  0%, 100% { border-radius: 58% 42% 55% 45% / 48% 55% 45% 52%; }
+  25% { border-radius: 45% 55% 48% 52% / 58% 42% 58% 42%; }
+  50% { border-radius: 52% 48% 42% 58% / 45% 52% 48% 55%; }
+  75% { border-radius: 42% 58% 55% 45% / 52% 45% 55% 48%; }
+}
+
+/* Breathing CTA */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035); }
+}
+
+/* Vine progress leaf pop */
+@keyframes leaf-pop {
+  0% { transform: scale(0) rotate(-30deg); }
+  70% { transform: scale(1.25) rotate(6deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+/* Logo path self-draw */
+@keyframes draw-path {
+  from { stroke-dashoffset: var(--path-len, 900); }
+  to { stroke-dashoffset: 0; }
+}
+
+/* Scan wave for routine conflict check */
+@keyframes scan-wave {
+  from { transform: translateY(-110%); opacity: 0.9; }
+  to { transform: translateY(110vh); opacity: 0.4; }
+}
+
+/* Quiet scrollbar */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 8px;
+  border: 2px solid var(--bg);
+}
+
+input, textarea, select {
+  font-family: var(--font-sans);
+}
+input::placeholder, textarea::placeholder {
+  color: color-mix(in srgb, var(--ink2) 80%, transparent);
+}
+
+button { font-family: var(--font-sans); }

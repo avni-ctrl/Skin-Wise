@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(node --version)",
+      "PowerShell(npm --version)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Users/Avni Singhal/AppData/Local/Programs/**)",
+      "Read(//c/Users/Avni Singhal/AppData/Roaming/**)",
+      "Read(//c/Users/Avni Singhal/scoop/**)",
+      "Read(//c/ProgramData/chocolatey/**)",
+      "mcp__9efc3f1a-bd2f-43e8-ad40-bbb7dbc8061e__list_projects",
+      "PowerShell(winget --version)",
+      "PowerShell(winget install OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements --silent)",
+      "mcp__9efc3f1a-bd2f-43e8-ad40-bbb7dbc8061e__list_tables",
+      "mcp__9efc3f1a-bd2f-43e8-ad40-bbb7dbc8061e__get_project_url",
+      "mcp__9efc3f1a-bd2f-43e8-ad40-bbb7dbc8061e__get_publishable_keys",
+      "mcp__9efc3f1a-bd2f-43e8-ad40-bbb7dbc8061e__execute_sql"
+    ]
+  }
+}
