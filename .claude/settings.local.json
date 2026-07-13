@@ -14,7 +14,15 @@
       "mcp__9efc3f1a-bd2f-43e8-ad40-bbb7dbc8061e__list_tables",
       "mcp__9efc3f1a-bd2f-43e8-ad40-bbb7dbc8061e__get_project_url",
       "mcp__9efc3f1a-bd2f-43e8-ad40-bbb7dbc8061e__get_publishable_keys",
-      "mcp__9efc3f1a-bd2f-43e8-ad40-bbb7dbc8061e__execute_sql"
+      "mcp__9efc3f1a-bd2f-43e8-ad40-bbb7dbc8061e__execute_sql",
+      "mcp__a78b427d-085c-4400-a76c-db73549809ac__balance",
+      "PowerShell(git -C \"C:\\\\Users\\\\Avni Singhal\\\\Desktop\\\\SkinWise\" status)",
+      "PowerShell(git -C \"C:\\\\Users\\\\Avni Singhal\\\\Desktop\\\\SkinWise\" diff --stat)",
+      "PowerShell(git -C \"C:\\\\Users\\\\Avni Singhal\\\\Desktop\\\\SkinWise\" diff -- src/components/Backdrop.jsx src/components/QuoteStrip.jsx src/components/SkinDescent.jsx src/pages/Home.jsx src/main.jsx src/index.css src/components/Logo.jsx src/components/Nav.jsx)",
+      "PowerShell(git -C \"C:\\\\Users\\\\Avni Singhal\\\\Desktop\\\\SkinWise\" checkout -- src/main.jsx)",
+      "mcp__claude-in-chrome__tabs_context_mcp",
+      "WebFetch(domain:beautyinstem.com)",
+      "WebFetch(domain:truekindskincare.com)"
     ]
   }
 }

@@ -1,23 +1,52 @@
 import { Link } from 'react-router-dom'
-import Logo from './Logo'
 
-// Restrained on purpose — the eye rests here. No animation.
+const LINKS = [
+  { to: '/formula-lab', label: 'Formula Lab' },
+  { to: '/skin-garden', label: 'Skin Garden' },
+  { to: '/product-museum', label: 'Product Museum' },
+  { to: '/find-a-dupe', label: 'Find a Dupe' },
+  { to: '/about', label: 'About' },
+]
+
+// Editorial close: an oversized wordmark you almost fall into, then the
+// practical rows underneath. Dark emerald in both themes.
 export default function Footer() {
   return (
-    <footer className="relative z-10 border-t border-line mt-24">
-      <div className="mx-auto max-w-[1200px] px-4 md:px-8 py-12 flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
-        <Logo size="nav" withTagline />
-        <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[0.8rem] text-ink2">
-          <Link to="/" className="hover:text-ink transition-colors">Home</Link>
-          <Link to="/formula-lab" className="hover:text-ink transition-colors">Formula Lab</Link>
-          <Link to="/skin-garden" className="hover:text-ink transition-colors">Skin Garden</Link>
-          <Link to="/product-museum" className="hover:text-ink transition-colors">Product Museum</Link>
-          <Link to="/find-a-dupe" className="hover:text-ink transition-colors">Find a Dupe</Link>
-          <Link to="/about" className="hover:text-ink transition-colors">About</Link>
-        </nav>
-        <div className="text-[0.72rem] text-ink2 text-center md:text-right leading-relaxed">
-          <p>© {new Date().getFullYear()} SkinWise.</p>
-          <p>Informational only — not medical advice.</p>
+    <footer className="relative z-10 mt-24 overflow-hidden" style={{ background: '#1C3F30', color: '#FBF9F6' }}>
+      <div className="mx-auto max-w-[1280px] px-6 pb-10 pt-16 md:px-10">
+        <p
+          aria-hidden="true"
+          className="select-none whitespace-nowrap text-[18vw] leading-[0.85] md:text-[15vw]"
+          style={{ fontFamily: 'var(--font-script)', color: 'rgba(201,162,39,0.9)' }}
+        >
+          SkinWise
+        </p>
+
+        <div className="mt-10 flex flex-col gap-8 border-t border-[rgba(251,249,246,0.16)] pt-8 md:flex-row md:items-start md:justify-between">
+          <p
+            className="max-w-xs text-[0.7rem] uppercase tracking-[0.24em] text-[rgba(251,249,246,0.65)]"
+            style={{ fontFamily: 'var(--font-head)' }}
+          >
+            Know your skin. Know your products.
+          </p>
+
+          <nav className="grid grid-cols-2 gap-x-10 gap-y-3 md:grid-cols-3">
+            {LINKS.map((l) => (
+              <Link
+                key={l.to}
+                to={l.to}
+                className="link-line text-[0.78rem] uppercase tracking-[0.14em] text-[rgba(251,249,246,0.85)] hover:text-[#FBF9F6]"
+                style={{ fontFamily: 'var(--font-head)' }}
+              >
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="text-[0.7rem] leading-relaxed text-[rgba(251,249,246,0.55)] md:text-right">
+            <p>© {new Date().getFullYear()} SkinWise.</p>
+            <p>Informational only — not medical advice.</p>
+          </div>
         </div>
       </div>
     </footer>

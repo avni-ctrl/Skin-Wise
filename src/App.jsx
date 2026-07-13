@@ -3,7 +3,6 @@ import { AnimatePresence } from 'framer-motion'
 import Nav from './components/Nav'
 import Backdrop from './components/Backdrop'
 import SerumTransition, { PageFade } from './components/PageTransition'
-import CursorDot from './components/CursorDot'
 import { GooFilterDefs } from './components/LiquidBackdrop'
 import Home from './pages/Home'
 import FormulaLab from './pages/FormulaLab'
@@ -22,7 +21,6 @@ export default function App() {
       <Backdrop />
       <Nav />
       <SerumTransition />
-      <CursorDot />
       <main className="relative z-10">
         <AnimatePresence mode="popLayout" initial={false}>
           <Routes location={location} key={location.pathname}>

@@ -83,10 +83,11 @@ export default function Nav() {
               to={l.to}
               end={l.to === '/'}
               className={({ isActive }) =>
-                `text-[0.82rem] tracking-wide transition-colors ${
+                `link-line text-[0.7rem] uppercase tracking-[0.18em] transition-colors ${
                   isActive ? 'text-ink' : 'text-ink2 hover:text-ink'
                 }`
               }
+              style={{ fontFamily: 'var(--font-head)', fontWeight: 500 }}
             >
               {l.label}
             </NavLink>
@@ -107,7 +108,8 @@ export default function Nav() {
           ) : (
             <Link
               to="/build"
-              className="rounded-full bg-accent px-5 py-2 text-[0.82rem] font-medium text-on-accent shadow-[var(--shadow)] hover:brightness-105 transition"
+              className="rounded-full bg-ink px-5 py-2 text-[0.7rem] font-medium uppercase tracking-[0.16em] text-bg hover:opacity-90 transition"
+              style={{ fontFamily: 'var(--font-head)' }}
             >
               Build
             </Link>
@@ -118,7 +120,11 @@ export default function Nav() {
         <div className="flex items-center gap-3 lg:hidden">
           <ThemeToggle />
           {!session && (
-            <Link to="/build" className="rounded-full bg-accent px-4 py-1.5 text-[0.8rem] font-medium text-on-accent">
+            <Link
+              to="/build"
+              className="rounded-full bg-ink px-4 py-1.5 text-[0.68rem] font-medium uppercase tracking-[0.16em] text-bg"
+              style={{ fontFamily: 'var(--font-head)' }}
+            >
               Build
             </Link>
           )}
