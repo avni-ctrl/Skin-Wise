@@ -9,13 +9,12 @@ import { ease } from '../lib/easing'
 // Editorial photography (Unsplash). Swap these for Higgsfield renders when
 // credits are available — each slot is a plain <img src>, nothing structural.
 const IMG = {
-  hero: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?q=80&w=1400&auto=format&fit=crop',
-  lab: 'https://images.unsplash.com/photo-1612817288484-6f916006741a?q=80&w=1200&auto=format&fit=crop',
-  garden: 'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?q=80&w=1200&auto=format&fit=crop',
+  lab: '/images/bottles-flatlay.jpg',
+  garden: '/images/garden-doodle.jpg',
   museum: 'https://images.unsplash.com/photo-1631730359585-38a4935cbec4?q=80&w=1200&auto=format&fit=crop',
   dupe: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?q=80&w=1200&auto=format&fit=crop',
-  hype: 'https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?q=80&w=1200&auto=format&fit=crop',
-  portrait: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?q=80&w=1200&auto=format&fit=crop',
+  hype: '/images/portrait-freckle.png',
+  portrait: '/images/portrait-glow.png',
 }
 
 const SYSTEM = [
@@ -35,7 +34,7 @@ const SYSTEM = [
     accent: 'ritual',
     copy: 'Build your AM and PM routine step by step. Every addition is checked for conflicts — retinol against vitamin C, acids against retinoids — and layered in the right order.',
     img: IMG.garden,
-    alt: 'A single green plant against a white wall',
+    alt: 'Hand-drawn doodles of skincare bottles, oils and tools',
   },
   {
     n: '03',
@@ -207,7 +206,7 @@ export default function Home() {
         <div className="mx-auto grid max-w-[1280px] items-center gap-10 px-6 py-20 md:grid-cols-2 md:gap-20 md:px-10 md:py-28">
           <Reveal>
             <div className="img-frame aspect-[3/4] max-h-[560px] w-full">
-              <img src={IMG.hype} alt="High-glamour beauty portrait with red lips" loading="lazy" />
+              <img src={IMG.hype} alt="Close editorial portrait, freckled skin in daylight" loading="lazy" />
             </div>
           </Reveal>
           <Reveal delay={0.15}>
