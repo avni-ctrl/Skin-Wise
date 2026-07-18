@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import Headline from '../components/Headline'
+import FeatureHero from '../components/FeatureHero'
 import ProductSearch from '../components/ProductSearch'
 import Footer from '../components/Footer'
 import { addShelfItem, getShelf, removeShelfItem } from '../services/userData'
@@ -128,12 +128,17 @@ export default function ProductMuseum() {
   }
 
   return (
-    <div className="px-4 pt-32 md:px-8 md:pt-40">
-      <div className="mx-auto max-w-[1000px]">
-        <div className="text-center">
-          <p className="tag-caps mb-4">product museum</p>
-          <Headline lines={[['Your shelf, as a', 'collection', '.']]} />
-        </div>
+    <div className="px-4 md:px-8">
+      <FeatureHero
+        tag="product museum · the shelf, curated"
+        title={[<>Your shelf, as a</>, <><em>collection.</em></>]}
+        sub="Every bottle catalogued from the day it opens — its real life computed for your city, its fading noted, its oxidising flagged."
+        img="/images/bottles-flatlay.jpg"
+        imgAlt="Amber serum bottles, jars and tools arranged like museum pieces"
+        dark={false}
+        pos="center"
+      />
+      <div className="mx-auto max-w-[1000px] pt-14">
 
         {!session ? (
           <div className="mx-auto mt-16 max-w-md text-center">

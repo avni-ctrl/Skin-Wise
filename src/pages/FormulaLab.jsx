@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import Headline from '../components/Headline'
+import FeatureHero from '../components/FeatureHero'
 import ProductSearch from '../components/ProductSearch'
 import ScoreRing from '../components/ScoreRing'
 import Accordion from '../components/Accordion'
@@ -89,17 +89,18 @@ export default function FormulaLab() {
     : 'var(--accent)'
 
   return (
-    <div className="px-4 pt-32 md:px-8 md:pt-40">
-      <div className="mx-auto max-w-[1000px]">
-        <div className="text-center">
-          <p className="tag-caps mb-4">formula lab</p>
-          <Headline lines={[['Read every', 'ingredient', '.']]} />
-          <p className="mx-auto mt-5 max-w-md text-[0.9rem] text-ink2">
-            Search anything on your shelf or wishlist — we score it against your skin, your routine, your city.
-          </p>
-        </div>
-
-        <div className="mt-12">
+    <div className="px-4 md:px-8">
+      <FeatureHero
+        tag="formula lab · the reading room"
+        title={[<>Read every</>, <><em>ingredient.</em></>]}
+        sub="Search anything on your shelf or wishlist — we score it against your skin, your routine, your city."
+        img="/images/garden-doodle.jpg"
+        imgAlt="Hand-drawn doodles of skincare bottles and jars, some open, some closed"
+        dark={false}
+        pos="center"
+      />
+      <div className="mx-auto max-w-[1000px] pt-14">
+        <div className="mt-1">
           <ProductSearch onSelect={analyze} />
         </div>
 

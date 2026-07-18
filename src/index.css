@@ -18,18 +18,18 @@
 }
 
 .dark {
-  --bg: #163024;
-  --card: #1f3d30;
+  --bg: #112620;
+  --card: #1b382c;
   --ink: #fbf9f6;
-  --ink2: #b4b0a4;
+  --ink2: #c2beb0;
   --accent: #c9a227;
-  --on-accent: #163024;
-  --gold: #c9a227;
-  --gold2: #a99148;
+  --on-accent: #112620;
+  --gold: #d5b04a;
+  --gold2: #b89f55;
   --amber: #c79a4a;
   --terra: #c98070;
-  --line: rgba(251, 249, 246, 0.14);
-  --shadow: 0 10px 40px -12px rgba(0, 0, 0, 0.45);
+  --line: rgba(251, 249, 246, 0.18);
+  --shadow: 0 10px 40px -12px rgba(0, 0, 0, 0.5);
 }
 
 @theme inline {

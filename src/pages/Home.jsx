@@ -1,67 +1,64 @@
+import { Suspense, lazy } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import QuoteStrip from '../components/QuoteStrip'
 import Footer from '../components/Footer'
 import SkinDive from '../components/SkinDive'
+import SpotlightCard from '../components/SpotlightCard'
 import { useAuth } from '../context/AuthContext'
+import { useReducedMotion, useIsMobile, isCapableDevice } from '../lib/usePrefs'
 import { ease } from '../lib/easing'
 
-// Editorial photography (Unsplash). Swap these for Higgsfield renders when
-// credits are available — each slot is a plain <img src>, nothing structural.
+const GradientOrb = lazy(() => import('../components/GradientOrb'))
+
 const IMG = {
-  lab: '/images/bottles-flatlay.jpg',
-  garden: '/images/garden-doodle.jpg',
-  museum: 'https://images.unsplash.com/photo-1631730359585-38a4935cbec4?q=80&w=1200&auto=format&fit=crop',
-  dupe: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?q=80&w=1200&auto=format&fit=crop',
   hype: '/images/portrait-freckle.png',
   portrait: '/images/portrait-glow.png',
 }
 
-const SYSTEM = [
+// The five rooms of the house, presented as one form over the living orb.
+const SYSTEMS = [
   {
-    n: '01',
+    n: 'I',
     to: '/formula-lab',
     name: 'Formula Lab',
-    accent: 'verdicts',
-    copy: 'Search any Indian skincare product and read its formula in plain language — every active explained, scored Safe, Caution or Avoid against your skin.',
-    img: IMG.lab,
-    alt: 'Apothecary flat-lay of amber bottles and botanicals on stone',
+    copy: 'Search any Indian skincare product — every active decoded, scored Safe, Caution or Avoid for your skin.',
   },
   {
-    n: '02',
+    n: 'II',
     to: '/skin-garden',
     name: 'Skin Garden',
-    accent: 'ritual',
-    copy: 'Build your AM and PM routine step by step. Every addition is checked for conflicts — retinol against vitamin C, acids against retinoids — and layered in the right order.',
-    img: IMG.garden,
-    alt: 'Hand-drawn doodles of skincare bottles, oils and tools',
+    copy: 'Grow your AM and PM ritual. Every addition is conflict-checked and layered in the right order.',
   },
   {
-    n: '03',
+    n: 'III',
     to: '/product-museum',
     name: 'Product Museum',
-    accent: 'shelf-life',
-    copy: 'Your shelf, curated. We track when each product was opened and compute its real usable life for your city and season — and flag the vitamin C that quietly oxidised.',
-    img: IMG.museum,
-    alt: 'Copper and amber cosmetic bottles arranged on a dark surface',
+    copy: 'Your shelf, curated. Real usable life per product, tuned to your city — oxidised serums get flagged.',
   },
   {
-    n: '04',
+    n: 'IV',
     to: '/find-a-dupe',
     name: 'Find a Dupe',
-    accent: 'echoes',
-    copy: 'Love the formula, not the price? We rebuild any product from its ingredient list and surface the closest matches at a fraction of the cost.',
-    img: IMG.dupe,
-    alt: 'Hands holding an amber dropper bottle in low light',
+    copy: 'Love the formula, not the price? We rebuild it from the ingredient list and surface the echoes.',
+  },
+  {
+    n: 'V',
+    to: '/formula-lab',
+    name: 'Score a Product',
+    copy: 'Hype index vs formula truth — what the internet says, against what the ingredient list earns.',
   },
 ]
 
-const MARQUEE = [
-  'Ingredients decoded',
-  'Conflicts caught',
-  'Shelf life tracked',
-  'Dupes found',
-  'Made for Indian skin',
+const MARQUEE = ['Ingredients decoded', 'Conflicts caught', 'Shelf life tracked', 'Dupes found', 'Made for Indian skin']
+
+// One organic silhouette per system — irregular amoeba shapes, no rectangles.
+const AMOEBAS = [
+  '58% 42% 55% 45% / 48% 55% 45% 52%',
+  '45% 55% 48% 52% / 58% 42% 58% 42%',
+  '52% 48% 42% 58% / 45% 52% 48% 55%',
+  '42% 58% 55% 45% / 52% 45% 55% 48%',
+  '55% 45% 50% 50% / 45% 55% 42% 58%',
 ]
 
 function Reveal({ children, delay = 0, className = '' }) {
@@ -78,52 +75,152 @@ function Reveal({ children, delay = 0, className = '' }) {
   )
 }
 
-function SystemRow({ item, i }) {
+// Slide two — the brand moment, truekind-style: just the mark, alone on the
+// house cream, nothing else competing.
+function BrandSlide() {
   return (
-    <div
-      className={`mx-auto flex max-w-[1200px] flex-col gap-10 px-6 py-16 md:items-center md:gap-20 md:py-24 ${
-        i % 2 ? 'md:flex-row-reverse' : 'md:flex-row'
-      }`}
-    >
-      <Reveal className="md:w-1/2">
-        <Link to={item.to} data-cursor className="img-frame block aspect-[4/5] max-h-[540px] w-full">
-          <img src={item.img} alt={item.alt} loading="lazy" />
-        </Link>
-      </Reveal>
-      <div className="md:w-1/2">
-        <Reveal>
-          <p className="tag-caps mb-5" style={{ fontFamily: 'var(--font-head)' }}>
-            {item.n} — the system
+    <section className="relative grid min-h-[92vh] place-items-center overflow-hidden bg-bg px-6">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true, margin: '-120px' }}
+        transition={{ duration: 1.3, ease: ease.silk }}
+        className="relative text-center"
+      >
+        {/* callout — bottom left: a gold thread out of the wordmark */}
+        <div className="pointer-events-none absolute -left-56 bottom-2 hidden w-56 lg:block" aria-hidden="true">
+          <svg viewBox="0 0 220 120" fill="none" className="w-full overflow-visible">
+            <motion.path
+              d="M215 18 C150 30 90 34 40 78"
+              stroke="#C9A227"
+              strokeWidth="1.5"
+              initial={{ pathLength: 0 }}
+              whileInView={{ pathLength: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1.1, delay: 0.5, ease: 'easeInOut' }}
+            />
+            <circle cx="40" cy="78" r="3" fill="#C9A227" />
+          </svg>
+          <p className="mt-2 text-left text-[0.62rem] uppercase tracking-[0.22em]" style={{ fontFamily: 'var(--font-head)', color: '#A99148' }}>
+            Conflicts caught
+            <span className="mt-1 block normal-case tracking-normal text-ink2" style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: '0.82rem' }}>
+              every routine checked on every add
+            </span>
           </p>
-          <h2 className="headline text-[2.2rem] md:text-[3.2rem]">
-            <Link to={item.to} className="transition-opacity hover:opacity-80">
-              {item.name.split(' ')[0]} <em>{item.name.split(' ').slice(1).join(' ').toLowerCase() || item.accent}</em>
-            </Link>
+        </div>
+
+        {/* callout — top right */}
+        <div className="pointer-events-none absolute -right-56 top-0 hidden w-56 lg:block" aria-hidden="true">
+          <p className="mb-2 text-right text-[0.62rem] uppercase tracking-[0.22em]" style={{ fontFamily: 'var(--font-head)', color: '#A99148' }}>
+            Verdicts for your skin
+            <span className="mt-1 block normal-case tracking-normal text-ink2" style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: '0.82rem' }}>
+              Safe · Caution · Avoid — from your quiz
+            </span>
+          </p>
+          <svg viewBox="0 0 220 120" fill="none" className="w-full overflow-visible">
+            <motion.path
+              d="M5 102 C70 90 130 86 180 42"
+              stroke="#C9A227"
+              strokeWidth="1.5"
+              initial={{ pathLength: 0 }}
+              whileInView={{ pathLength: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1.1, delay: 0.7, ease: 'easeInOut' }}
+            />
+            <circle cx="180" cy="42" r="3" fill="#C9A227" />
+          </svg>
+        </div>
+
+        <img
+          src="/images/logo-transparent.png"
+          alt="SkinWise — Know your skin, know your products"
+          className="mx-auto w-[min(560px,88vw)] dark:brightness-0 dark:invert"
+        />
+        <p className="mt-10 text-[0.7rem] uppercase tracking-[0.32em] text-ink2" style={{ fontFamily: 'var(--font-head)' }}>
+          Skincare intelligence · Made for Indian skin
+        </p>
+      </motion.div>
+    </section>
+  )
+}
+
+// The systems — one form floating over the living orb.
+function SystemsForm() {
+  const reduced = useReducedMotion()
+  const mobile = useIsMobile()
+  const orbOn = !reduced && !mobile && isCapableDevice()
+
+  return (
+    <section className="relative overflow-hidden" style={{ background: '#142E23' }}>
+      {orbOn && (
+        <Suspense fallback={null}>
+          <div aria-hidden="true" className="absolute inset-0 opacity-80">
+            <GradientOrb />
+          </div>
+        </Suspense>
+      )}
+      <div aria-hidden="true" className="absolute inset-0" style={{ background: 'radial-gradient(90% 70% at 50% 45%, transparent 30%, rgba(20,46,35,0.9) 100%)' }} />
+
+      <div className="relative z-10 mx-auto max-w-[1200px] px-6 py-24 md:py-32">
+        <Reveal className="text-center">
+          <p className="tag-caps mb-5" style={{ fontFamily: 'var(--font-head)', color: '#EBD9A0' }}>
+            The system · five rooms, one profile
+          </p>
+          <h2 className="headline text-[2.2rem] md:text-[3.4rem]" style={{ color: '#FBF9F6' }}>
+            Everything your <em style={{ color: '#EBD9A0' }}>skin</em> asked for
           </h2>
-          <p className="mt-6 max-w-md text-[0.95rem] leading-relaxed text-ink2">{item.copy}</p>
-          <Link
-            to={item.to}
-            data-cursor
-            className="link-line mt-8 inline-block text-[0.72rem] uppercase tracking-[0.2em] text-ink"
-            style={{ fontFamily: 'var(--font-head)', fontWeight: 500 }}
-          >
-            Step inside →
-          </Link>
         </Reveal>
+
+        <div className="mt-16 grid items-start gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          {SYSTEMS.map((s, i) => (
+            <Reveal
+              key={s.n}
+              delay={i * 0.08}
+              className={
+                ['lg:mt-0', 'lg:mt-16', 'lg:mt-6', 'lg:mt-20 lg:-translate-x-4', 'lg:mt-2 lg:translate-x-6'][i] +
+                (i === 4 ? ' sm:col-span-2 lg:col-span-1' : '')
+              }
+            >
+              <SpotlightCard className="h-full" radius={AMOEBAS[i]}>
+                <Link
+                  to={s.to}
+                  data-cursor
+                  className="flex h-full min-h-[290px] flex-col justify-center gap-4 border border-[rgba(251,249,246,0.14)] px-10 py-12 backdrop-blur-md transition-colors hover:border-[rgba(201,162,39,0.45)]"
+                  style={{ background: 'rgba(20,46,35,0.55)', borderRadius: 'inherit' }}
+                >
+                  <span className="text-[0.68rem] uppercase tracking-[0.3em]" style={{ fontFamily: 'var(--font-head)', color: '#C9A227' }}>
+                    {s.n}
+                  </span>
+                  <span className="text-[1.5rem] leading-tight" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: '#FBF9F6' }}>
+                    {s.name}
+                  </span>
+                  <span className="text-[0.86rem] leading-relaxed" style={{ color: 'rgba(251,249,246,0.72)' }}>
+                    {s.copy}
+                  </span>
+                  <span className="mt-auto pt-2 text-[0.68rem] uppercase tracking-[0.2em]" style={{ fontFamily: 'var(--font-head)', color: '#EBD9A0' }}>
+                    Step inside →
+                  </span>
+                </Link>
+              </SpotlightCard>
+            </Reveal>
+          ))}
+        </div>
       </div>
-    </div>
+    </section>
   )
 }
 
 export default function Home() {
   const { session, profile } = useAuth()
-
   const firstName = profile?.name?.split(' ')[0]
 
   return (
     <div>
-      {/* ---- HERO — the dive: a pinned descent through the skin's layers ---- */}
+      {/* ---- HERO — the dive into the face ---- */}
       <SkinDive session={session} />
+
+      {/* ---- SLIDE TWO — the mark ---- */}
+      <BrandSlide />
 
       {/* ---- MARQUEE ---- */}
       <section aria-hidden="true" className="marquee border-y border-line py-4" style={{ background: '#1C3F30' }}>
@@ -144,6 +241,7 @@ export default function Home() {
           ))}
         </div>
       </section>
+
       {/* ---- PHILOSOPHY ---- */}
       <section className="relative z-10 py-24 md:py-36">
         <div className="mx-auto max-w-[880px] px-6 text-center">
@@ -182,51 +280,37 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ---- THE SYSTEM 01–04 ---- */}
-      <section className="relative z-10">
-        <div className="mx-auto max-w-[1200px] px-6">
-          <Reveal>
-            <div className="flex items-end justify-between border-b border-line pb-6">
-              <h2 className="headline text-[2rem] md:text-[3rem]">
-                The <em>system</em>
-              </h2>
-              <p className="hidden text-[0.72rem] uppercase tracking-[0.22em] text-ink2 md:block" style={{ fontFamily: 'var(--font-head)' }}>
-                Four rooms · One profile
-              </p>
-            </div>
-          </Reveal>
-        </div>
-        {SYSTEM.map((item, i) => (
-          <SystemRow key={item.to} item={item} i={i} />
-        ))}
-      </section>
+      {/* ---- THE SYSTEMS FORM over the orb ---- */}
+      <SystemsForm />
 
-      {/* ---- HYPE VS FORMULA — dark editorial band ---- */}
-      <section className="relative z-10 overflow-hidden" style={{ background: '#1C3F30' }}>
+      {/* ---- HYPE VS FORMULA ---- */}
+      <section className="relative z-10 overflow-hidden bg-bg">
         <div className="mx-auto grid max-w-[1280px] items-center gap-10 px-6 py-20 md:grid-cols-2 md:gap-20 md:px-10 md:py-28">
           <Reveal>
-            <div className="img-frame aspect-[3/4] max-h-[560px] w-full">
-              <img src={IMG.hype} alt="Close editorial portrait, freckled skin in daylight" loading="lazy" />
-            </div>
+            <SpotlightCard>
+              <div className="img-frame aspect-[3/4] max-h-[560px] w-full">
+                <img src={IMG.hype} alt="Close editorial portrait, freckled skin in daylight" loading="lazy" />
+              </div>
+            </SpotlightCard>
           </Reveal>
           <Reveal delay={0.15}>
-            <p className="tag-caps mb-6" style={{ fontFamily: 'var(--font-head)', color: '#C9A227' }}>
+            <p className="tag-caps mb-6" style={{ fontFamily: 'var(--font-head)' }}>
               The hype index
             </p>
-            <h2 className="headline text-[2.2rem] md:text-[3.4rem]" style={{ color: '#FBF9F6' }}>
+            <h2 className="headline text-[2.2rem] md:text-[3.4rem]">
               Hype is loud.
               <br />
-              <em style={{ color: '#C9A227' }}>formulas are quiet.</em>
+              <em>formulas are quiet.</em>
             </h2>
-            <p className="mt-6 max-w-md text-[0.95rem] leading-relaxed" style={{ color: 'rgba(251,249,246,0.7)' }}>
+            <p className="mt-6 max-w-md text-[0.95rem] leading-relaxed text-ink2">
               Every product carries two scores here: how hard the internet is pushing it, and what
               its ingredient list actually earns. When the gap is wide, we say so.
             </p>
             <Link
               to="/formula-lab"
               data-cursor
-              className="link-line mt-8 inline-block text-[0.72rem] uppercase tracking-[0.2em]"
-              style={{ fontFamily: 'var(--font-head)', fontWeight: 500, color: '#C9A227' }}
+              className="link-line mt-8 inline-block text-[0.72rem] uppercase tracking-[0.2em] text-ink"
+              style={{ fontFamily: 'var(--font-head)', fontWeight: 500 }}
             >
               Score a product →
             </Link>
@@ -234,7 +318,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ---- PROFILE CTA — portrait band ---- */}
+      {/* ---- PROFILE CTA ---- */}
       <section className="relative z-10">
         <div className="mx-auto grid max-w-[1280px] items-center gap-10 px-6 py-20 md:grid-cols-2 md:gap-20 md:px-10 md:py-28">
           <Reveal className="order-2 md:order-1">
@@ -283,9 +367,11 @@ export default function Home() {
             )}
           </Reveal>
           <Reveal delay={0.15} className="order-1 md:order-2">
-            <div className="img-frame aspect-[3/4] max-h-[560px] w-full rounded-t-full">
-              <img src={IMG.portrait} alt="Editorial portrait with luminous skin on a terracotta wall" loading="lazy" />
-            </div>
+            <SpotlightCard radius="9999px 9999px 1.6rem 1.6rem">
+              <div className="img-frame aspect-[3/4] max-h-[560px] w-full rounded-t-full">
+                <img src={IMG.portrait} alt="Editorial portrait with luminous skin in warm light" loading="lazy" />
+              </div>
+            </SpotlightCard>
           </Reveal>
         </div>
       </section>

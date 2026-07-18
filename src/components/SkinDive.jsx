@@ -1,23 +1,31 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion'
+import { AnimatePresence, motion, useScroll, useSpring, useTransform } from 'framer-motion'
 import { useReducedMotion, useIsMobile } from '../lib/usePrefs'
 import { ease } from '../lib/easing'
 
-// The hero is built from the brand's own renders. The camera pushes *through*
-// the portrait's skin, and the "Layers of Skin" poster arrives as a real
-// object in depth — a stack you fly down through, other faces adrift behind it.
-const PORTRAIT = '/images/portrait-hero.png'
-const LAYERS = '/images/skin-layers.png'
-const FACES = ['/images/portrait-freckle.png', '/images/portrait-man.png', '/images/portrait-glow.png']
+// The dive: one smooth camera move into her cheek, then four held stations —
+// epidermis, dermis, subcutaneous, muscle — each with what it absorbs. The
+// scroll is spring-smoothed so every hand-off feels like silk, not slides.
+const SHOT0 = '/images/dive-0.jpg'
+const SHOT1 = '/images/dive-1.jpg'
+const SHOT2 = '/images/dive-2.jpg'
+const SHOT3 = '/images/dive-3.jpg'
+const SHOT4 = '/images/dive-4.jpg'
 
-// Five strata — surfaced as champagne cues on the right as the scan passes each.
-const STRATA = [
-  { name: 'Epidermis', note: 'Locks moisture in' },
-  { name: 'Dermis', note: 'Collagen & firmness' },
-  { name: 'Hypodermis', note: 'Cushions & contours' },
-  { name: 'Subcutaneous', note: 'Anchors it all' },
-  { name: 'Muscle', note: 'Movement & expression' },
+// Station captions — straight from the layer artwork.
+const STATIONS = [
+  { name: 'Epidermis', absorbs: 'Water · Moisture', note: 'The protective barrier. Locks moisture in and shields from damage.', io: [0.25, 0.29, 0.4, 0.44] },
+  { name: 'Dermis', absorbs: 'Skincare actives · Hydration', note: 'Collagen, elastin and blood vessels that keep skin firm and plump.', io: [0.45, 0.49, 0.58, 0.62] },
+  { name: 'Subcutaneous', absorbs: 'Oils · Lipid-soluble ingredients', note: 'The fat layer — cushions, contours and anchors everything above.', io: [0.63, 0.67, 0.76, 0.8] },
+  { name: 'Muscle', absorbs: 'Very large molecules — minimal', note: 'The deepest layer. Movement, expression, and where absorption ends.', io: [0.81, 0.85, 0.95, 0.99] },
+]
+
+const RAIL = [
+  ['Epidermis', 0.25, 0.44],
+  ['Dermis', 0.44, 0.62],
+  ['Subcutaneous', 0.62, 0.8],
+  ['Muscle', 0.8, 1],
 ]
 
 const DIVE_QUOTES = [
@@ -28,25 +36,9 @@ const DIVE_QUOTES = [
   'Beauty is depth. So is skincare.',
 ]
 
-// Faces adrift in the deep — position (%), base depth, and drift signature.
-const FACE_CFG = [
-  { left: '6%', top: '16%', z: -820, rotY: 12, w: 150, rise: -140 },
-  { left: '80%', top: '24%', z: -640, rotY: -14, w: 172, rise: -220 },
-  { left: '68%', top: '60%', z: -900, rotY: -9, w: 132, rise: -100 },
-]
-
-const BUBBLES = [
-  { left: '12%', size: 78, dur: 15, delay: 0, z: 180 },
-  { left: '24%', size: 40, dur: 12, delay: 2, z: 120 },
-  { left: '82%', size: 110, dur: 18, delay: 1, z: 220 },
-  { left: '90%', size: 54, dur: 13, delay: 3, z: 90 },
-  { left: '58%', size: 30, dur: 11, delay: 5, z: 260 },
-]
-
-// ---- Hero slide: tagline leads, then the headline, CTA and rotating quote.
 function HeroStage({ progress, session, reduced }) {
-  const opacity = useTransform(progress, [0, 0.08, 0.15], [1, 1, 0])
-  const y = useTransform(progress, [0, 0.15], [0, reduced ? 0 : -70])
+  const opacity = useTransform(progress, [0, 0.06, 0.12], [1, 1, 0])
+  const y = useTransform(progress, [0, 0.12], [0, reduced ? 0 : -70])
   const [qi, setQi] = useState(() => Math.floor(Math.random() * DIVE_QUOTES.length))
 
   useEffect(() => {
@@ -56,24 +48,20 @@ function HeroStage({ progress, session, reduced }) {
   }, [reduced])
 
   return (
-    <motion.div
-      style={{ opacity, y }}
-      className="absolute inset-0 z-30 flex flex-col items-center justify-center px-6 text-center"
-    >
-      {/* first line — the tagline */}
+    <motion.div style={{ opacity, y }} className="absolute inset-0 z-30 flex flex-col items-center justify-center px-6 text-center">
       <motion.p
         initial={{ opacity: 0, letterSpacing: '0.5em' }}
         animate={{ opacity: 1, letterSpacing: '0.34em' }}
         transition={{ duration: 1.2, delay: 0.1, ease: ease.silk }}
         className="mb-7 text-[0.72rem] uppercase md:text-[0.82rem]"
-        style={{ fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '0.34em', color: '#EBD9A0' }}
+        style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: '#EBD9A0' }}
       >
-        Know your Skin. Know your Products.
+        Skincare intelligence · Made for Indian skin
       </motion.p>
       <h1 className="headline text-[3rem] leading-[1.04] md:text-[5rem]" style={{ color: '#FBF9F6' }}>
         {[
-          <>True to your <em style={{ color: '#EBD9A0' }}>skin,</em></>,
-          <>wise to every <em style={{ color: '#EBD9A0' }}>formula.</em></>,
+          <>Know your <em style={{ color: '#EBD9A0' }}>Skin,</em></>,
+          <>Know your <em style={{ color: '#EBD9A0' }}>Products.</em></>,
         ].map((line, i) => (
           <motion.span
             key={i}
@@ -144,50 +132,45 @@ function HeroStage({ progress, session, reduced }) {
   )
 }
 
-// A face floating in the deep — parallax rise + gentle turn as you descend.
-function FaceCard({ progress, src, cfg }) {
-  const opacity = useTransform(progress, [0.2, 0.36, 0.86, 0.98], [0, 0.5, 0.5, 0])
-  const y = useTransform(progress, [0.2, 1], ['0vh', `${cfg.rise / 10}vh`])
-  const z = useTransform(progress, [0.2, 1], [cfg.z, cfg.z + 260])
+// One held station of the descent. Settles gently (1.05 → 1), holds perfectly
+// still while its caption reads, then drifts up to 1.1 as the next arrives —
+// no violent zooms, just breath.
+function Station({ progress, src, alt, z, io, exit = true }) {
+  const [inA, inB, outA, outB] = io
+  const opacity = useTransform(progress, exit ? [inA, inB, outA, outB] : [inA, inB, 1, 1], [0, 1, 1, exit ? 0 : 1])
+  const scale = useTransform(progress, [inA, inB + 0.04, outA, outB], [1.06, 1, 1, exit ? 1.1 : 1.04])
   return (
-    <motion.div
-      aria-hidden="true"
-      className="absolute overflow-hidden rounded-[14px]"
-      style={{
-        left: cfg.left,
-        top: cfg.top,
-        width: cfg.w,
-        opacity,
-        y,
-        z,
-        rotateY: cfg.rotY,
-        filter: 'blur(1.5px) saturate(0.9)',
-        border: '1px solid rgba(201,162,39,0.28)',
-        boxShadow: '0 30px 70px -30px rgba(28,63,48,0.55)',
-      }}
-    >
-      <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" style={{ aspectRatio: '3 / 4' }} />
-      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(28,63,48,0.05), rgba(28,63,48,0.42))' }} />
-    </motion.div>
+    <motion.img
+      src={src}
+      alt={alt}
+      className="absolute inset-0 h-full w-full object-cover"
+      style={{ opacity, scale, zIndex: z, transformOrigin: '42% 52%', willChange: 'transform, opacity' }}
+    />
   )
 }
 
-// Champagne cue pill for one stratum — surfaces as the scan passes its band.
-function LayerCue({ progress, stratum, start, end }) {
-  const fade = Math.min(0.05, (end - start) / 3)
-  const opacity = useTransform(progress, [start, start + fade, end - fade, end], [0, 1, 1, 0])
-  const x = useTransform(progress, [start, start + fade], [26, 0])
+// The absorb card — glassy, right side, one per station.
+function AbsorbCard({ progress, s }) {
+  const [a, b, c, d] = s.io
+  const opacity = useTransform(progress, [a, b, c, d], [0, 1, 1, 0])
+  const y = useTransform(progress, [a, b], [30, 0])
   return (
-    <motion.div style={{ opacity, x }} className="absolute right-6 top-1/2 -translate-y-1/2 lg:right-14">
+    <motion.div style={{ opacity, y }} className="absolute right-5 top-1/2 z-20 w-[290px] -translate-y-1/2 md:right-12 md:w-[330px]">
       <div
-        className="rounded-full border px-5 py-2.5 backdrop-blur-sm"
-        style={{ borderColor: 'rgba(201,162,39,0.4)', background: 'rgba(251,249,246,0.55)' }}
+        className="rounded-[1.5rem] border p-6 backdrop-blur-md"
+        style={{ borderColor: 'rgba(201,162,39,0.35)', background: 'rgba(251,249,246,0.72)', boxShadow: '0 24px 60px -24px rgba(28,63,48,0.35)' }}
       >
-        <p className="text-[0.62rem] uppercase tracking-[0.28em]" style={{ fontFamily: 'var(--font-head)', color: '#1C3F30', fontWeight: 600 }}>
-          {stratum.name}
+        <p className="text-[0.62rem] uppercase tracking-[0.32em]" style={{ fontFamily: 'var(--font-head)', color: '#A99148' }}>
+          this deep, skin absorbs
         </p>
-        <p className="mt-0.5 text-[0.82rem] italic" style={{ fontFamily: 'var(--font-display)', color: '#A99148' }}>
-          {stratum.note}
+        <h3 className="mt-2 text-[1.7rem] leading-none" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: '#1C3F30' }}>
+          {s.name}
+        </h3>
+        <p className="mt-3 text-[0.88rem] font-medium" style={{ fontFamily: 'var(--font-head)', color: '#1C3F30' }}>
+          {s.absorbs}
+        </p>
+        <p className="mt-2 text-[0.82rem] leading-relaxed" style={{ color: '#5c5a52' }}>
+          {s.note}
         </p>
       </div>
     </motion.div>
@@ -204,7 +187,7 @@ function RailStop({ progress, label, start, end, i }) {
     <div className="flex items-center gap-3">
       <motion.span style={{ opacity: active, scale: grow, background: '#C9A227' }} className="block h-1.5 w-1.5 rounded-full" />
       <motion.span
-        style={{ opacity: active, fontFamily: 'var(--font-head)', color: '#A99148' }}
+        style={{ opacity: active, fontFamily: 'var(--font-head)', color: '#EBD9A0' }}
         className="text-[0.56rem] uppercase tracking-[0.3em]"
       >
         {`0${i + 1} ${label}`}
@@ -213,19 +196,18 @@ function RailStop({ progress, label, start, end, i }) {
   )
 }
 
-// ---- Reduced-motion / mobile fallback: no pinning, a clean stack.
 function DiveFallback({ session }) {
   return (
-    <section aria-label="The layers of skin">
+    <section aria-label="Descending through the layers of skin">
       <div className="relative flex h-[88vh] items-end overflow-hidden">
-        <img src={PORTRAIT} alt="A luminous, close portrait — bare, healthy skin" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: 'center 30%' }} />
+        <img src={SHOT0} alt="A luminous close portrait — bare, healthy skin" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: 'center 30%' }} />
         <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(22,48,36,0.35), rgba(22,48,36,0.05) 40%, rgba(22,48,36,0.72))' }} />
         <div className="relative z-10 mx-auto w-full max-w-[1100px] px-6 pb-16 text-center">
           <p className="mb-4 text-[0.72rem] uppercase tracking-[0.3em]" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: '#EBD9A0' }}>
-            Know your Skin. Know your Products.
+            Skincare intelligence · Made for Indian skin
           </p>
           <h1 className="headline text-[2.6rem] leading-[1.05]" style={{ color: '#FBF9F6' }}>
-            True to your <em style={{ color: '#EBD9A0' }}>skin,</em><br />wise to every <em style={{ color: '#EBD9A0' }}>formula.</em>
+            Know your <em style={{ color: '#EBD9A0' }}>Skin,</em><br />Know your <em style={{ color: '#EBD9A0' }}>Products.</em>
           </h1>
           <Link
             to={session ? '/skin-garden' : '/build'}
@@ -236,9 +218,9 @@ function DiveFallback({ session }) {
           </Link>
         </div>
       </div>
-      <div className="bg-bg py-12 text-center">
-        <img src={LAYERS} alt="The five layers of skin, from epidermis to muscle" className="mx-auto w-full max-w-[520px] px-6" loading="lazy" />
-      </div>
+      {[[SHOT1, 'The epidermis — absorbs water and moisture'], [SHOT2, 'The dermis — absorbs skincare actives and hydration'], [SHOT3, 'The subcutaneous fat layer — absorbs oils'], [SHOT4, 'The muscle layer — where absorption ends']].map(([src, alt]) => (
+        <img key={src} src={src} alt={alt} className="w-full" loading="lazy" />
+      ))}
     </section>
   )
 }
@@ -249,134 +231,76 @@ export default function SkinDive({ session }) {
   const mobile = useIsMobile()
 
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
+  // Silk: everything below reads from the spring, not the raw scroll.
+  const p = useSpring(scrollYProgress, { stiffness: 82, damping: 24, restDelta: 0.0005 })
 
-  // Portrait — pushed toward the camera, then dissolved into depth-of-field.
-  const pZ = useTransform(scrollYProgress, [0, 0.3], [0, 520])
-  const pScale = useTransform(scrollYProgress, [0, 0.3], [1, 1.55])
-  const pOpacity = useTransform(scrollYProgress, [0, 0.2, 0.3], [1, 1, 0])
-  const pBlur = useTransform(scrollYProgress, [0.12, 0.3], ['blur(0px)', 'blur(16px)'])
-  const scrimOpacity = useTransform(scrollYProgress, [0, 0.13, 0.24], [1, 0.85, 0])
+  // The entry: push into her cheek until skin fills the frame, then hand off.
+  const p0Scale = useTransform(p, [0.05, 0.28], [1, 2.7])
+  const p0Opacity = useTransform(p, [0, 0.21, 0.29], [1, 1, 0])
+  const scrim = useTransform(p, [0, 0.08, 0.18], [1, 0.85, 0])
 
-  // Layers poster — rises out of depth, tilts up to face you, then the frame
-  // scans down the stack (title/epidermis → muscle/tagline).
-  const posterZ = useTransform(scrollYProgress, [0.14, 0.42], [-760, 0])
-  const posterScale = useTransform(scrollYProgress, [0.14, 0.44], [0.82, 1])
-  const posterRotX = useTransform(scrollYProgress, [0.14, 0.44, 1], [26, 0, -7])
-  const posterRotY = useTransform(scrollYProgress, [0.3, 0.62, 0.95], [-5, 3, -2])
-  const posterY = useTransform(scrollYProgress, [0.3, 0.96], ['8vh', '-58vh'])
-  const posterOpacity = useTransform(scrollYProgress, [0.14, 0.3, 0.92, 1], [0, 1, 1, 0.85])
-  const sheenX = useTransform(scrollYProgress, [0.3, 0.7], ['-40%', '140%'])
+  // Muscle finale — a slow push into the full stack's muscle rows.
+  const s4Opacity = useTransform(p, [0.79, 0.85], [0, 1])
+  const s4Scale = useTransform(p, [0.79, 0.86, 0.92, 1], [1.06, 1, 1, 1.22])
 
-  // Closing line as the descent bottoms out.
-  const closeOpacity = useTransform(scrollYProgress, [0.9, 0.95, 1], [0, 1, 0.92])
-  const closeY = useTransform(scrollYProgress, [0.9, 1], [24, 0])
-
-  // Warm the light mid-descent, then settle — kept in cream/champagne so the
-  // poster's own background blends at the gutters.
-  const bg = useTransform(scrollYProgress, [0, 0.25, 0.6, 1], ['#FBF9F6', '#F4EAD6', '#EEE2CC', '#F7F1E4'])
-
-  const bandStart = 0.3
-  const bandEnd = 0.9
-  const bands = STRATA.map((_, i) => {
-    const span = (bandEnd - bandStart) / STRATA.length
-    return [bandStart + i * span, bandStart + (i + 1) * span]
-  })
+  const washOpacity = useTransform(p, [0.94, 1], [0, 0.9])
+  const closeOpacity = useTransform(p, [0.95, 0.995], [0, 1])
+  const closeY = useTransform(p, [0.95, 1], [26, 0])
 
   if (reduced || mobile) return <DiveFallback session={session} />
 
   return (
-    <section
-      ref={ref}
-      aria-label="A guided descent through the layers of skin"
-      className="relative"
-      style={{ height: '560vh' }}
-    >
-      <motion.div
-        style={{ backgroundColor: bg, perspective: '1500px', perspectiveOrigin: '50% 42%' }}
-        className="sticky top-0 h-screen w-full overflow-hidden"
-      >
-        {/* faces adrift in the deep */}
-        {FACE_CFG.map((cfg, i) => (
-          <FaceCard key={i} progress={scrollYProgress} src={FACES[i]} cfg={cfg} />
+    <section ref={ref} aria-label="A guided descent through the layers of skin" className="relative" style={{ height: '640vh' }}>
+      <div className="sticky top-0 h-screen w-full overflow-hidden" style={{ background: '#D8CFC2' }}>
+        {/* Stations 1–3: epidermis, dermis, subcutaneous */}
+        <Station progress={p} src={SHOT1} alt="Inside the cheek — the epidermis" z={4} io={[0.2, 0.27, 0.43, 0.48]} />
+        <Station progress={p} src={SHOT2} alt="Deeper — the dermis beneath the epidermis" z={3} io={[0.43, 0.48, 0.61, 0.66]} />
+        <Station progress={p} src={SHOT3} alt="Deeper still — the subcutaneous fat layer" z={2} io={[0.61, 0.66, 0.79, 0.85]} />
+        {/* Station 4 — the full stack down to muscle; holds to the end */}
+        <motion.img
+          src={SHOT4}
+          alt="The deepest layer — muscle, where absorption ends"
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ opacity: s4Opacity, scale: s4Scale, zIndex: 1, transformOrigin: '44% 60%', willChange: 'transform, opacity' }}
+        />
+
+        {/* The portrait we enter through */}
+        <motion.img
+          src={SHOT0}
+          alt="A luminous close portrait — bare, healthy skin catching the light"
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ opacity: p0Opacity, scale: p0Scale, zIndex: 10, transformOrigin: '60% 48%', objectPosition: 'center 32%', willChange: 'transform, opacity' }}
+        />
+        <motion.div style={{ opacity: scrim, zIndex: 11 }} className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(22,48,36,0.42) 0%, rgba(22,48,36,0.06) 34%, rgba(22,48,36,0.12) 60%, rgba(22,48,36,0.6) 100%)' }} />
+        </motion.div>
+
+        {/* absorb cards — one per station */}
+        {STATIONS.map((s) => (
+          <AbsorbCard key={s.name} progress={p} s={s} />
         ))}
 
-        {/* the descent through the poster — a real object in Z */}
+        {/* closing wash + line */}
         <motion.div
-          style={{ opacity: posterOpacity, z: posterZ, scale: posterScale, rotateX: posterRotX, rotateY: posterRotY }}
-          className="absolute inset-0 z-10 flex justify-center overflow-hidden"
           aria-hidden="true"
-        >
-          <motion.div style={{ y: posterY }} className="relative h-[164vh] w-auto">
-            <img src={LAYERS} alt="" className="h-full w-auto max-w-none object-contain drop-shadow-[0_40px_90px_rgba(28,63,48,0.28)]" />
-            {/* champagne specular sweep */}
-            <motion.div
-              style={{ x: sheenX }}
-              className="pointer-events-none absolute inset-y-0 w-1/3"
-              aria-hidden="true"
-            >
-              <div className="h-full w-full" style={{ background: 'linear-gradient(105deg, transparent, rgba(255,247,220,0.5) 50%, transparent)', transform: 'skewX(-14deg)' }} />
-            </motion.div>
-          </motion.div>
+          style={{ opacity: washOpacity, zIndex: 20, background: 'linear-gradient(180deg, transparent 25%, rgba(22,48,36,0.9) 100%)' }}
+          className="pointer-events-none absolute inset-0"
+        />
+        <motion.div style={{ opacity: closeOpacity, y: closeY, zIndex: 30 }} className="pointer-events-none absolute inset-x-0 bottom-14 text-center">
+          <p className="text-[1.6rem] italic md:text-[2.2rem]" style={{ fontFamily: 'var(--font-display)', fontWeight: 500, color: '#FBF9F6' }}>
+            Beauty is <em style={{ color: '#EBD9A0' }}>depth.</em> So is skincare.
+          </p>
         </motion.div>
 
-        {/* portrait we dive into */}
-        <motion.div style={{ opacity: pOpacity, z: pZ, scale: pScale, filter: pBlur }} className="absolute inset-0 z-20">
-          <img
-            src={PORTRAIT}
-            alt="A luminous, close portrait — bare, healthy skin catching the light"
-            className="h-full w-full object-cover"
-            style={{ objectPosition: 'center 32%' }}
-          />
-          <motion.div style={{ opacity: scrimOpacity }} className="absolute inset-0" aria-hidden="true">
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(22,48,36,0.42) 0%, rgba(22,48,36,0.04) 34%, rgba(22,48,36,0.10) 60%, rgba(22,48,36,0.60) 100%)' }} />
-            <div className="absolute inset-0" style={{ background: 'radial-gradient(120% 80% at 50% 40%, transparent 45%, rgba(22,48,36,0.35) 100%)' }} />
-          </motion.div>
-        </motion.div>
-
-        {/* foreground champagne bubbles — depth-of-field, closest to camera */}
-        <motion.div style={{ opacity: posterOpacity }} className="pointer-events-none absolute inset-0 z-20" aria-hidden="true">
-          {BUBBLES.map((b, i) => (
-            <motion.span
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                left: b.left,
-                bottom: '-12%',
-                width: b.size,
-                height: b.size,
-                z: b.z,
-                filter: 'blur(0.5px)',
-                background: 'radial-gradient(circle at 32% 30%, rgba(255,255,255,0.85), rgba(235,217,160,0.30) 45%, rgba(201,162,39,0.10) 70%, transparent 78%)',
-                border: '1px solid rgba(201,162,39,0.22)',
-              }}
-              animate={{ y: ['0vh', '-122vh'], opacity: [0, 0.9, 0.9, 0] }}
-              transition={{ duration: b.dur, delay: b.delay, repeat: Infinity, ease: 'easeInOut', times: [0, 0.1, 0.85, 1] }}
-            />
-          ))}
-        </motion.div>
-
-        {/* layer cues on the right */}
-        {STRATA.map((s, i) => (
-          <LayerCue key={s.name} progress={scrollYProgress} stratum={s} start={bands[i][0]} end={bands[i][1]} />
-        ))}
-
-        {/* hero slide */}
-        <HeroStage progress={scrollYProgress} session={session} reduced={reduced} />
+        <HeroStage progress={p} session={session} reduced={reduced} />
 
         {/* depth rail */}
         <div className="absolute left-5 top-1/2 z-30 hidden -translate-y-1/2 flex-col gap-5 md:flex lg:left-10">
-          {STRATA.map((s, i) => (
-            <RailStop key={s.name} progress={scrollYProgress} label={s.name} start={bands[i][0]} end={bands[i][1]} i={i} />
+          {RAIL.map(([label, s, e], i) => (
+            <RailStop key={label} progress={p} label={label} start={s} end={e} i={i} />
           ))}
         </div>
-
-        {/* closing line */}
-        <motion.div style={{ opacity: closeOpacity, y: closeY }} className="pointer-events-none absolute bottom-16 left-1/2 z-30 -translate-x-1/2 text-center">
-          <p className="text-[1.6rem] italic md:text-[2.2rem]" style={{ fontFamily: 'var(--font-display)', fontWeight: 500, color: '#1C3F30' }}>
-            Beauty is <em style={{ color: '#C9A227' }}>depth.</em> So is skincare.
-          </p>
-        </motion.div>
-      </motion.div>
+      </div>
     </section>
   )
 }

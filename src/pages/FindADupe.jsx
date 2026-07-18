@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import Headline from '../components/Headline'
+import FeatureHero from '../components/FeatureHero'
 import ProductSearch from '../components/ProductSearch'
 import Footer from '../components/Footer'
 import { findDupes } from '../services/dupes'
@@ -100,15 +100,17 @@ export default function FindADupe() {
   }
 
   return (
-    <div className="px-4 pt-32 md:px-8 md:pt-40">
-      <div className="mx-auto max-w-[1000px]">
-        <div className="text-center">
-          <p className="tag-caps mb-4">find a dupe</p>
-          <Headline lines={[['Same', 'good', '. Smaller price.']]} />
-          <p className="mx-auto mt-5 max-w-md text-[0.9rem] text-ink2">
-            Free for everyone, no login. Search what you love — we rebuild it from its ingredients.
-          </p>
-        </div>
+    <div className="px-4 md:px-8">
+      <FeatureHero
+        tag="find a dupe · the echo chamber"
+        title={[<>Same <em>glow.</em></>, <>Smaller price.</>]}
+        sub="Free for everyone, no login. Search what you love — we rebuild it from its ingredients and surface the echoes."
+        img="/images/portrait-man.png"
+        imgAlt="Editorial portrait in a black tee against a plaster wall"
+        dark
+        pos="center 25%"
+      />
+      <div className="mx-auto max-w-[1000px] pt-14">
 
         {/* the scanner */}
         <div className="mx-auto mt-12 max-w-[620px]">

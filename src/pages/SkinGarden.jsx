@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion, Reorder } from 'framer-motion'
-import Headline from '../components/Headline'
+import FeatureHero from '../components/FeatureHero'
 import ProductSearch from '../components/ProductSearch'
 import Footer from '../components/Footer'
 import { backdropBus } from '../components/backdropBus'
@@ -155,12 +155,17 @@ export default function SkinGarden() {
   }
 
   return (
-    <div className="px-4 pt-32 md:px-8 md:pt-40">
-      <div className="mx-auto max-w-[820px]">
-        <div className="text-center">
-          <p className="tag-caps mb-4">skin garden</p>
-          <Headline lines={[['Your daily', 'ritual', '.']]} />
-        </div>
+    <div className="px-4 md:px-8">
+      <FeatureHero
+        tag="skin garden · where rituals take root"
+        title={[<>Your daily</>, <><em>ritual.</em></>]}
+        sub="Morning and night, planted step by step — every leaf checked so nothing in your garden fights itself."
+        img="https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=1600&auto=format&fit=crop"
+        imgAlt="Deep green leaves holding drops of water"
+        dark
+        pos="center"
+      />
+      <div className="mx-auto max-w-[820px] pt-14">
 
         {!session ? (
           <GuestGate />

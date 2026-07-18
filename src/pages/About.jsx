@@ -1,56 +1,93 @@
 import { motion } from 'framer-motion'
 import Headline from '../components/Headline'
 import Footer from '../components/Footer'
-import { FaceLine } from '../components/Logo'
+import SpotlightCard from '../components/SpotlightCard'
 import { ease } from '../lib/easing'
 
+// The manifesto — numbered like chapters, read like a letter.
 const BLOCKS = [
   {
+    n: 'I',
     caps: 'the why',
     text: 'Skincare in India is a ₹2-lakh-crore conversation held mostly in whispers and marketing. Labels are written to be skimmed, not understood. We built SkinWise because the truth about a formula shouldn’t need a chemistry degree — it should need two clicks.',
   },
   {
+    n: 'II',
     caps: 'the how',
     text: 'One database, tended by hand: every ingredient catalogued with what it does, whom it suits, and whom it quietly harms. Every verdict on this site is computed from that database against your saved skin profile — never a guess, never a sponsored answer.',
   },
   {
+    n: 'III',
     caps: 'the promise',
     text: 'We will tell you when the ₹349 serum matches the ₹3,400 one. We will tell you when two products in your own routine argue with each other. And we will never diagnose — your dermatologist does medicine; we do reading.',
   },
 ]
 
+const VALUES = [
+  ['Independent', 'no sponsored verdicts, ever'],
+  ['Evidence-first', 'formulas over influencers'],
+  ['Climate-aware', 'shelf life tuned to Indian heat'],
+  ['Private', 'your skin data stays yours'],
+]
+
 export default function About() {
   return (
     <div className="px-4 pt-32 md:px-8 md:pt-40">
-      <div className="mx-auto max-w-[760px]">
+      <div className="mx-auto max-w-[880px]">
         <div className="text-center">
           <p className="tag-caps mb-4">about skinwise</p>
           <Headline lines={[['Skincare,', 'read', ' honestly.']]} />
+          <p className="mx-auto mt-6 max-w-md text-[0.95rem] leading-relaxed text-ink2">
+            A reading room for Indian skincare — built on one database, one skin profile, and a
+            refusal to let marketing finish the sentence.
+          </p>
         </div>
 
-        <div className="mx-auto mt-14 w-24 opacity-80">
-          <FaceLine draw className="w-full" />
-        </div>
-
-        <div className="mt-14 space-y-16">
+        {/* the manifesto */}
+        <div className="mt-20 space-y-14">
           {BLOCKS.map((b, i) => (
             <motion.section
-              key={i}
+              key={b.n}
               initial={{ opacity: 0, y: 26 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-80px' }}
               transition={{ duration: 0.7, ease: ease.silk }}
-              className={i % 2 ? 'md:pl-24' : 'md:pr-24'}
+              className="grid gap-4 border-t border-line pt-8 md:grid-cols-[110px_1fr] md:gap-10"
             >
-              <p className="tag-caps mb-4">{b.caps}</p>
-              <p className="text-[1.15rem] md:text-[1.35rem] leading-relaxed text-ink" style={{ fontFamily: 'var(--font-display)', fontWeight: 500 }}>
+              <div>
+                <p className="text-[1.9rem] leading-none" style={{ fontFamily: 'var(--font-display)', color: 'var(--gold)' }}>
+                  {b.n}
+                </p>
+                <p className="tag-caps mt-2">{b.caps}</p>
+              </div>
+              <p className="text-[1.15rem] leading-relaxed text-ink md:text-[1.3rem]" style={{ fontFamily: 'var(--font-display)', fontWeight: 500 }}>
                 {b.text}
               </p>
             </motion.section>
           ))}
         </div>
 
-        {/* warm-graded photography placeholder */}
+        {/* values strip */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.7, ease: ease.silk }}
+          className="mt-20 grid gap-6 rounded-[1.8rem] border border-line bg-card/70 p-8 backdrop-blur-sm sm:grid-cols-2 lg:grid-cols-4"
+        >
+          {VALUES.map(([t, d]) => (
+            <div key={t} className="border-l-2 border-gold/60 pl-4">
+              <p className="text-[0.78rem] uppercase tracking-[0.2em] text-ink" style={{ fontFamily: 'var(--font-head)', fontWeight: 600 }}>
+                {t}
+              </p>
+              <p className="mt-1.5 text-[0.82rem] italic text-ink2" style={{ fontFamily: 'var(--font-display)' }}>
+                {d}
+              </p>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* the faces we build for */}
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -58,13 +95,30 @@ export default function About() {
           transition={{ duration: 1 }}
           className="mt-20 grid gap-4 sm:grid-cols-3"
         >
-          {['linear-gradient(135deg, #e8ddc8, #c9a227aa)', 'linear-gradient(135deg, #7a9a8288, #1c3f3066)', 'linear-gradient(135deg, #fbf9f6, #a9914866)'].map((g, i) => (
-            <div key={i} className="aspect-[3/4] rounded-[1.6rem] border border-line" style={{ background: g }} />
+          {[
+            ['/images/portrait-freckle.png', 'Freckled skin in warm daylight'],
+            ['/images/portrait-man.png', 'Editorial portrait in a black tee'],
+            ['/images/portrait-glow.png', 'Luminous skin in golden hour light'],
+          ].map(([src, alt]) => (
+            <SpotlightCard key={src}>
+              <img src={src} alt={alt} loading="lazy" className="aspect-[3/4] w-full object-cover" />
+            </SpotlightCard>
           ))}
         </motion.div>
         <p className="mt-3 text-center text-[0.68rem] uppercase tracking-[0.25em] text-ink2">
-          golden hour, macro, shallow depth — photography direction
+          real skin, golden hour — the faces we build for
         </p>
+
+        {/* closing mark */}
+        <motion.img
+          src="/images/logo-transparent.png"
+          alt="SkinWise — Know your skin, know your products"
+          initial={{ opacity: 0, scale: 0.96 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1, ease: ease.silk }}
+          className="mx-auto mb-6 mt-24 w-[min(340px,70%)] dark:brightness-0 dark:invert"
+        />
       </div>
       <Footer />
     </div>

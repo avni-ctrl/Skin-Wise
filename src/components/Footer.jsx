@@ -14,13 +14,12 @@ export default function Footer() {
   return (
     <footer className="relative z-10 mt-24 overflow-hidden" style={{ background: '#1C3F30', color: '#FBF9F6' }}>
       <div className="mx-auto max-w-[1280px] px-6 pb-10 pt-16 md:px-10">
-        <p
-          aria-hidden="true"
-          className="select-none whitespace-nowrap text-[18vw] leading-[0.85] md:text-[15vw]"
-          style={{ fontFamily: 'var(--font-script)', color: 'rgba(201,162,39,0.9)' }}
-        >
-          SkinWise
-        </p>
+        <img
+          src="/images/logo-transparent.png"
+          alt="SkinWise — Know your skin, know your products"
+          className="mx-auto w-[min(360px,64vw)] opacity-90"
+          style={{ filter: 'brightness(0) invert(1)' }}
+        />
 
         <div className="mt-10 flex flex-col gap-8 border-t border-[rgba(251,249,246,0.16)] pt-8 md:flex-row md:items-start md:justify-between">
           <p

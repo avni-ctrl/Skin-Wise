@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import Logo from './Logo'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import { ease } from '../lib/easing'
@@ -72,7 +71,7 @@ export default function Nav() {
     >
       <div className="mx-auto flex max-w-[1200px] items-center justify-between px-4 md:px-8">
         <Link to="/" aria-label="SkinWise home" className="shrink-0">
-          <Logo size="nav" />
+          <img src="/images/logo-transparent.png" alt="SkinWise" className="h-11 w-auto md:h-[3.2rem] dark:brightness-0 dark:invert" />
         </Link>
 
         {/* Desktop links */}
