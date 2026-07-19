@@ -96,8 +96,8 @@ export default function About() {
           className="mt-20 grid gap-4 sm:grid-cols-3"
         >
           {[
-            ['/images/portrait-freckle.png', 'Freckled skin in warm daylight'],
-            ['/images/portrait-man.png', 'Editorial portrait in a black tee'],
+            ['/images/portrait-woman-new.jpg', 'Clear, healthy skin in soft daylight'],
+            ['/images/portrait-man-new.jpg', 'Young man with clear skin, editorial light'],
             ['/images/portrait-glow.png', 'Luminous skin in golden hour light'],
           ].map(([src, alt]) => (
             <SpotlightCard key={src}>

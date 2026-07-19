@@ -105,8 +105,8 @@ export default function FindADupe() {
         tag="find a dupe · the echo chamber"
         title={[<>Same <em>glow.</em></>, <>Smaller price.</>]}
         sub="Free for everyone, no login. Search what you love — we rebuild it from its ingredients and surface the echoes."
-        img="/images/portrait-man.png"
-        imgAlt="Editorial portrait in a black tee against a plaster wall"
+        img="/images/portrait-man-new.jpg"
+        imgAlt="Editorial portrait of a young man against a plaster wall"
         dark
         pos="center 25%"
       />

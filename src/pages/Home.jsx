@@ -12,8 +12,8 @@ import { ease } from '../lib/easing'
 const GradientOrb = lazy(() => import('../components/GradientOrb'))
 
 const IMG = {
-  hype: '/images/portrait-freckle.png',
-  portrait: '/images/portrait-glow.png',
+  hype: '/images/portrait-man-new.jpg',
+  portrait: '/images/portrait-glow-profile.jpg',
 }
 
 // The five rooms of the house, presented as one form over the living orb.
@@ -75,71 +75,183 @@ function Reveal({ children, delay = 0, className = '' }) {
   )
 }
 
-// Slide two — the brand moment, truekind-style: just the mark, alone on the
-// house cream, nothing else competing.
+// Slide two — truekind-style editorial: headline top-left, a blob-masked
+// portrait centre-right, floating value cards around it, one hand-drawn gold
+// thread arcing from the words down into the picture.
+const SLIDE2_CARDS = [
+  {
+    title: 'Radical transparency',
+    copy: 'Every formula decoded, every active named. No black boxes, no sponsored answers.',
+    pos: 'lg:left-[4%] lg:top-[44%]',
+    delay: 0.15,
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1C3F30" strokeWidth="1.5" strokeLinecap="round" className="h-5 w-5">
+        <circle cx="11" cy="11" r="6" />
+        <path d="M15.5 15.5 20 20" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Conflict-checked rituals',
+    copy: 'Your AM and PM garden is checked on every add — nothing in it fights itself.',
+    pos: 'lg:left-[16%] lg:top-[68%]',
+    delay: 0.3,
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1C3F30" strokeWidth="1.5" strokeLinecap="round" className="h-5 w-5">
+        <path d="M12 21c5-3.4 7-7.6 7-11a7 7 0 0 0-14 0c0 3.4 2 7.6 7 11z" />
+        <path d="M12 3v18" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Shelf life, tracked',
+    copy: 'Opened dates, Indian heat, oxidising vitamin C — your museum watches it all.',
+    pos: 'lg:right-[6%] lg:top-[22%]',
+    delay: 0.45,
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1C3F30" strokeWidth="1.5" strokeLinecap="round" className="h-5 w-5">
+        <path d="M9 3h6M10 3v4l-4 5c-2 2.6-.6 9 2.5 9h7c3.1 0 4.5-6.4 2.5-9l-4-5V3" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Dupes, found honestly',
+    copy: 'The ₹349 echo of the ₹3,400 serum — matched on actives, not marketing.',
+    pos: 'lg:right-[10%] lg:top-[64%]',
+    delay: 0.6,
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1C3F30" strokeWidth="1.5" strokeLinecap="round" className="h-5 w-5">
+        <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" />
+        <path d="M19 16l.9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16z" />
+      </svg>
+    ),
+  },
+]
+
 function BrandSlide() {
   return (
-    <section className="relative grid min-h-[92vh] place-items-center overflow-hidden bg-bg px-6">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.94 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        viewport={{ once: true, margin: '-120px' }}
-        transition={{ duration: 1.3, ease: ease.silk }}
-        className="relative text-center"
-      >
-        {/* callout — bottom left: a gold thread out of the wordmark */}
-        <div className="pointer-events-none absolute -left-56 bottom-2 hidden w-56 lg:block" aria-hidden="true">
-          <svg viewBox="0 0 220 120" fill="none" className="w-full overflow-visible">
-            <motion.path
-              d="M215 18 C150 30 90 34 40 78"
-              stroke="#C9A227"
-              strokeWidth="1.5"
-              initial={{ pathLength: 0 }}
-              whileInView={{ pathLength: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1.1, delay: 0.5, ease: 'easeInOut' }}
-            />
-            <circle cx="40" cy="78" r="3" fill="#C9A227" />
-          </svg>
-          <p className="mt-2 text-left text-[0.62rem] uppercase tracking-[0.22em]" style={{ fontFamily: 'var(--font-head)', color: '#A99148' }}>
-            Conflicts caught
-            <span className="mt-1 block normal-case tracking-normal text-ink2" style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: '0.82rem' }}>
-              every routine checked on every add
-            </span>
-          </p>
+    <section className="relative overflow-hidden bg-bg py-24 md:py-32">
+      <div className="relative mx-auto min-h-[88vh] max-w-[1280px] px-6 md:px-10">
+        {/* headline — top left, truekind grammar in the SkinWise voice */}
+        <div className="relative z-20 max-w-[620px]">
+          <motion.h2
+            initial={{ opacity: 0, y: 26 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-100px' }}
+            transition={{ duration: 0.9, ease: ease.silk }}
+            className="headline text-[2.4rem] leading-[1.02] md:text-[4rem]"
+          >
+            Personal, protective,
+            <br />
+            proven
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-100px' }}
+            transition={{ duration: 0.9, delay: 0.18, ease: ease.silk }}
+            className="mt-1 border-b-2 border-ink pb-2 text-[3rem] italic leading-none md:ml-40 md:text-[4.6rem]"
+            style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--ink)', width: 'fit-content' }}
+          >
+            skincare.
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: '-100px' }}
+            transition={{ duration: 0.9, delay: 0.3 }}
+            className="mt-5 max-w-[260px] text-[0.8rem] leading-relaxed text-ink2"
+          >
+            Unreservedly honest verdicts that truly fit — kind to your skin and your wallet, no exceptions.
+          </motion.p>
         </div>
 
-        {/* callout — top right */}
-        <div className="pointer-events-none absolute -right-56 top-0 hidden w-56 lg:block" aria-hidden="true">
-          <p className="mb-2 text-right text-[0.62rem] uppercase tracking-[0.22em]" style={{ fontFamily: 'var(--font-head)', color: '#A99148' }}>
-            Verdicts for your skin
-            <span className="mt-1 block normal-case tracking-normal text-ink2" style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: '0.82rem' }}>
-              Safe · Caution · Avoid — from your quiz
-            </span>
-          </p>
-          <svg viewBox="0 0 220 120" fill="none" className="w-full overflow-visible">
-            <motion.path
-              d="M5 102 C70 90 130 86 180 42"
-              stroke="#C9A227"
-              strokeWidth="1.5"
-              initial={{ pathLength: 0 }}
-              whileInView={{ pathLength: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1.1, delay: 0.7, ease: 'easeInOut' }}
+        {/* hand-drawn gold thread from the words into the portrait */}
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 420 420"
+          fill="none"
+          className="pointer-events-none absolute right-[16%] top-[4%] z-10 hidden w-[380px] lg:block"
+        >
+          <motion.path
+            d="M30 30 C230 10 400 90 350 330"
+            stroke="#C9A227"
+            strokeWidth="1.5"
+            initial={{ pathLength: 0 }}
+            whileInView={{ pathLength: 1 }}
+            viewport={{ once: true, margin: '-100px' }}
+            transition={{ duration: 1.4, delay: 0.5, ease: 'easeInOut' }}
+          />
+          <path d="M342 318 L350 332 L336 330" stroke="#C9A227" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+
+        {/* blob-masked portrait, centre-right */}
+        <div className="relative mt-14 flex justify-center lg:mt-0 lg:justify-end lg:pr-[10%]">
+          {/* soft backing blob */}
+          <div
+            aria-hidden="true"
+            className="absolute left-1/2 top-1/2 h-[112%] w-[118%] -translate-x-1/2 -translate-y-1/2 lg:left-auto lg:right-[-6%] lg:translate-x-0"
+            style={{ background: '#F0E6D7', borderRadius: '55% 45% 58% 42% / 46% 56% 44% 54%', transform: 'rotate(6deg)' }}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: '-120px' }}
+            transition={{ duration: 1.1, ease: ease.silk }}
+            className="relative z-10 w-[min(520px,88vw)] overflow-hidden"
+            style={{ borderRadius: '58% 42% 52% 48% / 55% 46% 54% 45%' }}
+          >
+            <img
+              src="/images/portrait-woman-new.jpg"
+              alt="Luminous, healthy skin in soft daylight"
+              className="aspect-[5/6] w-full object-cover"
             />
-            <circle cx="180" cy="42" r="3" fill="#C9A227" />
-          </svg>
+          </motion.div>
+
+          {/* gold leaf accent */}
+          <motion.svg
+            aria-hidden="true"
+            viewBox="0 0 60 60"
+            fill="none"
+            className="absolute -top-8 right-[6%] z-20 hidden w-14 lg:block"
+            initial={{ opacity: 0, rotate: -20, y: 10 }}
+            whileInView={{ opacity: 1, rotate: 0, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1, delay: 1.2, ease: ease.silk }}
+          >
+            <path d="M30 52 C14 40 12 20 30 8 C48 20 46 40 30 52z" fill="#7A9A82" opacity="0.9" />
+            <path d="M30 50 V10" stroke="#1C3F30" strokeWidth="1" opacity="0.5" />
+          </motion.svg>
         </div>
 
-        <img
-          src="/images/logo-transparent.png"
-          alt="SkinWise — Know your skin, know your products"
-          className="mx-auto w-[min(560px,88vw)] dark:brightness-0 dark:invert"
-        />
-        <p className="mt-10 text-[0.7rem] uppercase tracking-[0.32em] text-ink2" style={{ fontFamily: 'var(--font-head)' }}>
-          Skincare intelligence · Made for Indian skin
-        </p>
-      </motion.div>
+        {/* floating value cards — absolute on desktop, tidy grid on mobile */}
+        <div className="relative z-20 mt-10 grid gap-4 sm:grid-cols-2 lg:static lg:mt-0">
+          {SLIDE2_CARDS.map((c) => (
+            <motion.div
+              key={c.title}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.8, delay: c.delay, ease: ease.silk }}
+              className={`lg:absolute lg:w-[230px] ${c.pos}`}
+            >
+              <motion.div
+                animate={{ y: [0, -7, 0] }}
+                transition={{ duration: 5.5 + c.delay * 2, repeat: Infinity, ease: 'easeInOut', delay: c.delay }}
+                className="rounded-[1.4rem] border border-line bg-card p-6 text-center shadow-[var(--shadow)]"
+              >
+                <span className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full" style={{ background: 'var(--bg)' }}>
+                  {c.icon}
+                </span>
+                <p className="text-[0.82rem] font-semibold text-ink" style={{ fontFamily: 'var(--font-head)' }}>
+                  {c.title}
+                </p>
+                <p className="mt-2 text-[0.74rem] leading-relaxed text-ink2">{c.copy}</p>
+              </motion.div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
     </section>
   )
 }
@@ -289,7 +401,7 @@ export default function Home() {
           <Reveal>
             <SpotlightCard>
               <div className="img-frame aspect-[3/4] max-h-[560px] w-full">
-                <img src={IMG.hype} alt="Close editorial portrait, freckled skin in daylight" loading="lazy" />
+                <img src={IMG.hype} alt="Close editorial portrait of a young man with clear skin" loading="lazy" />
               </div>
             </SpotlightCard>
           </Reveal>
@@ -369,7 +481,7 @@ export default function Home() {
           <Reveal delay={0.15} className="order-1 md:order-2">
             <SpotlightCard radius="9999px 9999px 1.6rem 1.6rem">
               <div className="img-frame aspect-[3/4] max-h-[560px] w-full rounded-t-full">
-                <img src={IMG.portrait} alt="Editorial portrait with luminous skin in warm light" loading="lazy" />
+                <img src={IMG.portrait} alt="Editorial profile portrait, luminous skin in soft light" loading="lazy" />
               </div>
             </SpotlightCard>
           </Reveal>

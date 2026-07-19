@@ -157,8 +157,8 @@ function AbsorbCard({ progress, s }) {
   return (
     <motion.div style={{ opacity, y }} className="absolute right-5 top-1/2 z-20 w-[290px] -translate-y-1/2 md:right-12 md:w-[330px]">
       <div
-        className="rounded-[1.5rem] border p-6 backdrop-blur-md"
-        style={{ borderColor: 'rgba(201,162,39,0.35)', background: 'rgba(251,249,246,0.72)', boxShadow: '0 24px 60px -24px rgba(28,63,48,0.35)' }}
+        className="rounded-[1.5rem] border p-6"
+        style={{ borderColor: 'rgba(201,162,39,0.35)', background: 'rgba(251,249,246,0.92)', boxShadow: '0 24px 60px -24px rgba(28,63,48,0.35)' }}
       >
         <p className="text-[0.62rem] uppercase tracking-[0.32em]" style={{ fontFamily: 'var(--font-head)', color: '#A99148' }}>
           this deep, skin absorbs
@@ -230,9 +230,19 @@ export default function SkinDive({ session }) {
   const reduced = useReducedMotion()
   const mobile = useIsMobile()
 
+  // Warm the decoder before the first scroll — every station is ready to show.
+  useEffect(() => {
+    ;[SHOT1, SHOT2, SHOT3, SHOT4].forEach((src) => {
+      const img = new Image()
+      img.src = src
+      img.decode?.().catch(() => {})
+    })
+  }, [])
+
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
   // Silk: everything below reads from the spring, not the raw scroll.
-  const p = useSpring(scrollYProgress, { stiffness: 82, damping: 24, restDelta: 0.0005 })
+  // Stiffer + critically damped — glides with the wheel instead of trailing it.
+  const p = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.6, restDelta: 0.0005 })
 
   // The entry: push into her cheek until skin fills the frame, then hand off.
   const p0Scale = useTransform(p, [0.05, 0.28], [1, 2.7])
