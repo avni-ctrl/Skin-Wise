@@ -5,7 +5,7 @@ import { ease } from '../lib/easing'
 // One cinematic opening slide for a feature room. Full-bleed backdrop with a
 // slow Ken Burns drift, emerald scrim, centred editorial copy, scroll cue.
 // Breaks out of any padded parent via the 100vw trick.
-export default function FeatureHero({ tag, title, sub, img, imgAlt = '', pos = 'center', dark = true, children }) {
+export default function FeatureHero({ tag, title, sub, img, imgAlt = '', pos = 'center', dark = true, backdrop, scrim = true, children }) {
   const ref = useRef(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
   const bgScale = useTransform(scrollYProgress, [0, 1], [1.08, 1.22])
@@ -20,21 +20,29 @@ export default function FeatureHero({ tag, title, sub, img, imgAlt = '', pos = '
       className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden"
       style={{ height: '92vh' }}
     >
-      <motion.img
-        src={img}
-        alt={imgAlt}
-        className="absolute inset-0 h-full w-full object-cover"
-        style={{ scale: bgScale, y: bgY, objectPosition: pos }}
-      />
-      <div
-        aria-hidden="true"
-        className="absolute inset-0"
-        style={{
-          background: dark
-            ? 'linear-gradient(180deg, rgba(22,48,36,0.55) 0%, rgba(22,48,36,0.25) 45%, rgba(22,48,36,0.66) 100%)'
-            : 'linear-gradient(180deg, rgba(251,249,246,0.72) 0%, rgba(251,249,246,0.3) 45%, rgba(251,249,246,0.85) 100%)',
-        }}
-      />
+      {backdrop ? (
+        <motion.div style={{ y: bgY }} className="absolute inset-0">
+          {backdrop}
+        </motion.div>
+      ) : (
+        <motion.img
+          src={img}
+          alt={imgAlt}
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ scale: bgScale, y: bgY, objectPosition: pos }}
+        />
+      )}
+      {scrim && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={{
+            background: dark
+              ? 'linear-gradient(180deg, rgba(22,48,36,0.55) 0%, rgba(22,48,36,0.25) 45%, rgba(22,48,36,0.66) 100%)'
+              : 'linear-gradient(180deg, rgba(251,249,246,0.72) 0%, rgba(251,249,246,0.3) 45%, rgba(251,249,246,0.85) 100%)',
+          }}
+        />
+      )}
 
       <motion.div style={{ opacity: fade }} className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center">
         <motion.p

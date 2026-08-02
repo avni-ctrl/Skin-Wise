@@ -133,10 +133,10 @@ export default function ProductMuseum() {
         tag="product museum · the shelf, curated"
         title={[<>Your shelf, as a</>, <><em>collection.</em></>]}
         sub="Every bottle catalogued from the day it opens — its real life computed for your city, its fading noted, its oxidising flagged."
-        img="/images/bottles-flatlay.jpg"
-        imgAlt="Amber serum bottles, jars and tools arranged like museum pieces"
-        dark={false}
-        pos="center"
+        img="/images/portrait-man.png"
+        imgAlt="Editorial portrait of a young man with clear skin"
+        dark
+        pos="center 22%"
       />
       <div className="mx-auto max-w-[1000px] pt-14">
 

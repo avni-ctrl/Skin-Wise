@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import FeatureHero from '../components/FeatureHero'
+import EchoBackdrop from '../components/EchoBackdrop'
 import ProductSearch from '../components/ProductSearch'
 import Footer from '../components/Footer'
 import { findDupes } from '../services/dupes'
@@ -105,10 +106,9 @@ export default function FindADupe() {
         tag="find a dupe · the echo chamber"
         title={[<>Same <em>glow.</em></>, <>Smaller price.</>]}
         sub="Free for everyone, no login. Search what you love — we rebuild it from its ingredients and surface the echoes."
-        img="/images/portrait-man-new.jpg"
-        imgAlt="Editorial portrait of a young man against a plaster wall"
         dark
-        pos="center 25%"
+        scrim={false}
+        backdrop={<EchoBackdrop />}
       />
       <div className="mx-auto max-w-[1000px] pt-14">
 
