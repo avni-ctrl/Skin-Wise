@@ -58,7 +58,7 @@ function HeroStage({ progress, session, reduced }) {
       >
         Skincare intelligence · Made for Indian skin
       </motion.p>
-      <h1 className="headline text-[3rem] leading-[1.04] md:text-[5rem]" style={{ color: '#FBF9F6' }}>
+      <h1 className="headline text-[2.5rem] leading-[1.05] sm:text-[3rem] md:text-[5rem]" style={{ color: '#FBF9F6' }}>
         {[
           <>Know your <em style={{ color: '#EBD9A0' }}>Skin,</em></>,
           <>Know your <em style={{ color: '#EBD9A0' }}>Products.</em></>,
@@ -144,20 +144,23 @@ function Station({ progress, src, alt, z, io, exit = true }) {
       src={src}
       alt={alt}
       className="absolute inset-0 h-full w-full object-cover"
-      style={{ opacity, scale, zIndex: z, transformOrigin: '42% 52%', willChange: 'transform, opacity' }}
+      style={{ opacity, scale, zIndex: z, transformOrigin: '42% 52%', objectPosition: '42% 50%', willChange: 'transform, opacity' }}
     />
   )
 }
 
-// The absorb card — glassy, right side, one per station.
+// The absorb card — glassy. Bottom-centre on phones, right rail on desktop.
+// Outer div owns positioning (its own transform); inner motion.div owns the
+// entrance, so framer's translateY never fights Tailwind's centring transform.
 function AbsorbCard({ progress, s }) {
   const [a, b, c, d] = s.io
   const opacity = useTransform(progress, [a, b, c, d], [0, 1, 1, 0])
   const y = useTransform(progress, [a, b], [30, 0])
   return (
-    <motion.div style={{ opacity, y }} className="absolute right-5 top-1/2 z-20 w-[290px] -translate-y-1/2 md:right-12 md:w-[330px]">
+    <div className="pointer-events-none absolute inset-x-0 bottom-[7%] z-20 flex justify-center px-4 md:inset-x-auto md:bottom-auto md:right-12 md:top-1/2 md:block md:-translate-y-1/2 md:px-0">
+      <motion.div style={{ opacity, y }} className="w-full max-w-[340px] md:w-[330px]">
       <div
-        className="rounded-[1.5rem] border p-6"
+        className="rounded-[1.5rem] border p-5 md:p-6"
         style={{ borderColor: 'rgba(201,162,39,0.35)', background: 'rgba(251,249,246,0.92)', boxShadow: '0 24px 60px -24px rgba(28,63,48,0.35)' }}
       >
         <p className="text-[0.62rem] uppercase tracking-[0.32em]" style={{ fontFamily: 'var(--font-head)', color: '#A99148' }}>
@@ -173,7 +176,8 @@ function AbsorbCard({ progress, s }) {
           {s.note}
         </p>
       </div>
-    </motion.div>
+      </motion.div>
+    </div>
   )
 }
 
@@ -240,9 +244,11 @@ export default function SkinDive({ session }) {
   }, [])
 
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
-  // Silk: everything below reads from the spring, not the raw scroll.
-  // Stiffer + critically damped — glides with the wheel instead of trailing it.
-  const p = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.6, restDelta: 0.0005 })
+  // Desktop: a stiff, critically-damped spring glides with the wheel.
+  // Phones: raw progress — a spring trails a finger and reads as lag, so we
+  // track the touch 1:1 instead.
+  const pSpring = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.6, restDelta: 0.0005 })
+  const p = mobile ? scrollYProgress : pSpring
 
   // The entry: push into her cheek until skin fills the frame, then hand off.
   const p0Scale = useTransform(p, [0.05, 0.28], [1, 2.7])
@@ -257,11 +263,12 @@ export default function SkinDive({ session }) {
   const closeOpacity = useTransform(p, [0.95, 0.995], [0, 1])
   const closeY = useTransform(p, [0.95, 1], [26, 0])
 
-  if (reduced || mobile) return <DiveFallback session={session} />
+  // Only reduced-motion users get the stacked fallback — phones run the dive.
+  if (reduced) return <DiveFallback session={session} />
 
   return (
-    <section ref={ref} aria-label="A guided descent through the layers of skin" className="relative" style={{ height: '640vh' }}>
-      <div className="sticky top-0 h-screen w-full overflow-hidden" style={{ background: '#D8CFC2' }}>
+    <section ref={ref} aria-label="A guided descent through the layers of skin" className="relative" style={{ height: mobile ? '480vh' : '640vh' }}>
+      <div className="sticky top-0 h-[100svh] w-full overflow-hidden" style={{ background: '#D8CFC2' }}>
         {/* Stations 1–3: epidermis, dermis, subcutaneous */}
         <Station progress={p} src={SHOT1} alt="Inside the cheek — the epidermis" z={4} io={[0.2, 0.27, 0.43, 0.48]} />
         <Station progress={p} src={SHOT2} alt="Deeper — the dermis beneath the epidermis" z={3} io={[0.43, 0.48, 0.61, 0.66]} />
@@ -271,7 +278,7 @@ export default function SkinDive({ session }) {
           src={SHOT4}
           alt="The deepest layer — muscle, where absorption ends"
           className="absolute inset-0 h-full w-full object-cover"
-          style={{ opacity: s4Opacity, scale: s4Scale, zIndex: 1, transformOrigin: '44% 60%', willChange: 'transform, opacity' }}
+          style={{ opacity: s4Opacity, scale: s4Scale, zIndex: 1, transformOrigin: '44% 60%', objectPosition: '44% 55%', willChange: 'transform, opacity' }}
         />
 
         {/* The portrait we enter through */}
