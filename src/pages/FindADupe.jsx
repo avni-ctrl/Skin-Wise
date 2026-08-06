@@ -103,7 +103,7 @@ export default function FindADupe() {
   return (
     <div className="px-4 md:px-8">
       <FeatureHero
-        tag="find a dupe · the echo chamber"
+        tag="dupe finder · the echo chamber"
         title={[<>Same <em>glow.</em></>, <>Smaller price.</>]}
         sub="Free for everyone, no login. Search what you love — we rebuild it from its ingredients and surface the echoes."
         dark

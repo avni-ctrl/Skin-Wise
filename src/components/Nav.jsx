@@ -7,10 +7,10 @@ import { ease } from '../lib/easing'
 
 const LINKS = [
   { to: '/', label: 'Home' },
-  { to: '/formula-lab', label: 'Formula Lab' },
-  { to: '/skin-garden', label: 'Skin Garden' },
-  { to: '/product-museum', label: 'Product Museum' },
-  { to: '/find-a-dupe', label: 'Find a Dupe' },
+  { to: '/formula-lab', label: 'Formula Analysis' },
+  { to: '/skin-garden', label: 'Skin Ritual' },
+  { to: '/product-museum', label: 'Skin Shelf' },
+  { to: '/find-a-dupe', label: 'Dupe Finder' },
   { to: '/about', label: 'About' },
 ]
 

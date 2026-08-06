@@ -1,88 +1,141 @@
 import { motion } from 'framer-motion'
 import { useReducedMotion } from '../lib/usePrefs'
 
-// The Find a Dupe backdrop — "echoes". A product and its cheaper twin ripple
-// outward from three points; soft botanical blobs drift behind. No photo,
-// pure motion in the house palette (emerald base, champagne ripples).
-const RIPPLES = [
-  { x: '26%', y: '38%', dur: 7, delay: 0 },
-  { x: '72%', y: '30%', dur: 8.5, delay: 1.4 },
-  { x: '58%', y: '70%', dur: 7.8, delay: 2.8 },
-]
+// The Dupe Finder backdrop — a serum dropper releasing champagne drops onto a
+// dark emerald pool. Each drop lands and rings spread outward: the price, and
+// its echo. No photo; pure motion in the house palette.
+const WATER = '58%' // where air meets water
 
-const BLOBS = [
-  { x: '12%', y: '20%', s: 320, c: 'rgba(122,154,130,0.5)', dur: 15 },
-  { x: '78%', y: '58%', s: 380, c: 'rgba(201,162,39,0.28)', dur: 19 },
-  { x: '44%', y: '84%', s: 260, c: 'rgba(122,154,130,0.4)', dur: 17 },
-]
-
-function Ripple({ x, y, dur, delay, reduced }) {
+// A drop + the rings it makes, kept in sync: the drop falls over the first
+// ~45% of the period, then the rings bloom from the impact point.
+function Drip({ x, period, delay, ringMax = 4, reduced }) {
+  const rings = reduced ? 1 : 3
   return (
-    <div className="absolute" style={{ left: x, top: y }} aria-hidden="true">
-      {[0, 1, 2].map((k) => (
+    <>
+      {/* the falling champagne drop */}
+      {!reduced && (
+        <motion.span
+          aria-hidden="true"
+          className="absolute"
+          style={{
+            left: x,
+            top: '17%',
+            width: 9,
+            height: 13,
+            marginLeft: -4.5,
+            background: 'radial-gradient(circle at 40% 30%, #FBF5DE, #EBD9A0 55%, #C9A227 90%)',
+            borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+            filter: 'drop-shadow(0 0 4px rgba(235,217,160,0.5))',
+          }}
+          animate={{ top: ['17%', WATER], opacity: [0, 1, 1, 0], scaleY: [0.7, 1, 1.25, 0.4] }}
+          transition={{ duration: period, times: [0, 0.06, 0.42, 0.46], ease: 'easeIn', repeat: Infinity, delay }}
+        />
+      )}
+      {/* the rings on the surface */}
+      {[...Array(rings)].map((_, k) => (
         <motion.span
           key={k}
-          className="absolute rounded-full border"
+          aria-hidden="true"
+          className="absolute rounded-[50%] border"
           style={{
-            width: 40,
-            height: 40,
-            marginLeft: -20,
-            marginTop: -20,
+            left: x,
+            top: WATER,
+            width: 46,
+            height: 14,
+            marginLeft: -23,
+            marginTop: -7,
             borderColor: 'rgba(235,217,160,0.5)',
           }}
-          animate={reduced ? { opacity: 0.4, scale: 3 } : { scale: [0.4, 7], opacity: [0.55, 0] }}
-          transition={reduced ? undefined : { duration: dur, delay: delay + k * (dur / 3), repeat: Infinity, ease: 'easeOut' }}
+          animate={reduced ? { scale: 2.4, opacity: 0.3 } : { scale: [0.3, ringMax + k], opacity: [0.55, 0] }}
+          transition={
+            reduced
+              ? undefined
+              : { duration: period * 0.55, delay: delay + period * 0.45 + k * 0.28, repeat: Infinity, repeatDelay: period * 0.45, ease: 'easeOut' }
+          }
         />
       ))}
-      {/* the twin dots at the source — original + its dupe */}
-      <span className="absolute h-2 w-2 -translate-x-3 -translate-y-1 rounded-full" style={{ background: '#EBD9A0' }} />
-      <span className="absolute h-1.5 w-1.5 translate-x-2 translate-y-1 rounded-full" style={{ background: 'rgba(235,217,160,0.6)' }} />
-    </div>
+    </>
+  )
+}
+
+// The dropper bottle, tip aimed at the pool.
+function DropperBottle({ reduced }) {
+  return (
+    <motion.svg
+      aria-hidden="true"
+      viewBox="0 0 60 120"
+      className="absolute left-1/2 top-[3%] w-[54px] -translate-x-1/2 md:w-[64px]"
+      animate={reduced ? undefined : { y: [0, 6, 0] }}
+      transition={reduced ? undefined : { duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+    >
+      {/* rubber bulb */}
+      <rect x="21" y="2" width="18" height="20" rx="7" fill="#1C3F30" />
+      {/* collar */}
+      <rect x="19" y="21" width="22" height="7" rx="2" fill="#A99148" />
+      {/* glass body with champagne serum */}
+      <rect x="17" y="27" width="26" height="58" rx="9" fill="rgba(201,162,39,0.28)" stroke="rgba(235,217,160,0.55)" strokeWidth="1.2" />
+      <rect x="21" y="52" width="18" height="30" rx="7" fill="rgba(201,162,39,0.5)" />
+      {/* dropper tip */}
+      <path d="M26 85 L34 85 L31 100 L29 100 Z" fill="rgba(235,217,160,0.7)" />
+      <circle cx="30" cy="101" r="2.4" fill="#EBD9A0" />
+    </motion.svg>
+  )
+}
+
+// Tiny bubbles rising through the water.
+function Bubbles({ reduced }) {
+  if (reduced) return null
+  return (
+    <>
+      {[...Array(9)].map((_, i) => (
+        <motion.span
+          key={i}
+          aria-hidden="true"
+          className="absolute rounded-full"
+          style={{
+            left: `${(i * 41 + 8) % 96}%`,
+            bottom: '-4%',
+            width: 4 + (i % 3) * 2,
+            height: 4 + (i % 3) * 2,
+            background: 'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.7), rgba(201,162,39,0.15) 70%, transparent)',
+            border: '1px solid rgba(201,162,39,0.25)',
+          }}
+          animate={{ y: ['0vh', '-42vh'], opacity: [0, 0.7, 0] }}
+          transition={{ duration: 7 + (i % 4) * 2, repeat: Infinity, ease: 'easeInOut', delay: i * 0.7 }}
+        />
+      ))}
+    </>
   )
 }
 
 export default function EchoBackdrop() {
   const reduced = useReducedMotion()
   return (
-    <div className="absolute inset-0 overflow-hidden" style={{ background: 'radial-gradient(120% 120% at 50% 30%, #1C3F30 0%, #163024 55%, #112620 100%)' }}>
-      {/* drifting botanical blobs */}
-      {BLOBS.map((b, i) => (
-        <motion.span
-          key={i}
-          aria-hidden="true"
-          className="absolute rounded-full blur-3xl"
-          style={{ left: b.x, top: b.y, width: b.s, height: b.s, background: `radial-gradient(closest-side, ${b.c}, transparent)` }}
-          animate={reduced ? undefined : { x: [0, 30, -20, 0], y: [0, -24, 18, 0] }}
-          transition={reduced ? undefined : { duration: b.dur, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      ))}
+    <div className="absolute inset-0 overflow-hidden" style={{ background: 'linear-gradient(180deg, #1C3F30 0%, #163024 46%, #0f241b 58%, #0b1c15 100%)' }}>
+      {/* the water surface line + soft caustic sheen */}
+      <div aria-hidden="true" className="absolute inset-x-0" style={{ top: WATER, height: 1, background: 'linear-gradient(90deg, transparent, rgba(235,217,160,0.35), transparent)' }} />
+      <div aria-hidden="true" className="absolute inset-x-0 bottom-0" style={{ top: WATER, background: 'radial-gradient(120% 80% at 50% 0%, rgba(122,154,130,0.14), transparent 70%)' }} />
 
-      {/* echo ripples */}
-      {RIPPLES.map((r, i) => (
-        <Ripple key={i} {...r} reduced={reduced} />
-      ))}
+      <DropperBottle reduced={reduced} />
 
-      {/* faint mirrored "≈" — the sign of a near-match */}
+      {/* three drips at staggered points and tempos */}
+      <Drip x="50%" period={2.8} delay={0} ringMax={4.5} reduced={reduced} />
+      <Drip x="30%" period={3.6} delay={1.4} ringMax={3.5} reduced={reduced} />
+      <Drip x="70%" period={3.2} delay={2.4} ringMax={3.8} reduced={reduced} />
+
+      <Bubbles reduced={reduced} />
+
+      {/* faint mirrored "≈" — the mark of a near-match */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none leading-none"
-        style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'clamp(16rem, 42vw, 40rem)', color: 'rgba(201,162,39,0.06)' }}
+        className="pointer-events-none absolute left-1/2 select-none leading-none"
+        style={{ top: '34%', transform: 'translate(-50%, -50%)', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'clamp(10rem, 30vw, 26rem)', color: 'rgba(201,162,39,0.05)' }}
       >
         ≈
       </span>
 
-      {/* fine grain of gold flecks */}
-      {!reduced &&
-        [...Array(10)].map((_, i) => (
-          <motion.span
-            key={`f${i}`}
-            aria-hidden="true"
-            className="absolute h-1 w-1 rounded-full"
-            style={{ left: `${(i * 37) % 100}%`, top: `${(i * 53) % 100}%`, background: 'rgba(201,162,39,0.5)' }}
-            animate={{ y: [0, -18, 0], opacity: [0.15, 0.6, 0.15] }}
-            transition={{ duration: 5 + (i % 4), repeat: Infinity, ease: 'easeInOut', delay: i * 0.4 }}
-          />
-        ))}
+      {/* gentle centre darkening so the headline stays legible */}
+      <div aria-hidden="true" className="absolute inset-0" style={{ background: 'radial-gradient(70% 45% at 50% 48%, rgba(11,28,21,0.5), transparent 70%)' }} />
     </div>
   )
 }

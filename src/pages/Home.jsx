@@ -21,25 +21,25 @@ const SYSTEMS = [
   {
     n: 'I',
     to: '/formula-lab',
-    name: 'Formula Lab',
+    name: 'Formula Analysis',
     copy: 'Search any Indian skincare product — every active decoded, scored Safe, Caution or Avoid for your skin.',
   },
   {
     n: 'II',
     to: '/skin-garden',
-    name: 'Skin Garden',
+    name: 'Skin Ritual',
     copy: 'Grow your AM and PM ritual. Every addition is conflict-checked and layered in the right order.',
   },
   {
     n: 'III',
     to: '/product-museum',
-    name: 'Product Museum',
+    name: 'Skin Shelf',
     copy: 'Your shelf, curated. Real usable life per product, tuned to your city — oxidised serums get flagged.',
   },
   {
     n: 'IV',
     to: '/find-a-dupe',
-    name: 'Find a Dupe',
+    name: 'Dupe Finder',
     copy: 'Love the formula, not the price? We rebuild it from the ingredient list and surface the echoes.',
   },
   {

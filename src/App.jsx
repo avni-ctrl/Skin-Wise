@@ -1,3 +1,4 @@
+import { useLayoutEffect } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import Nav from './components/Nav'
@@ -14,6 +15,13 @@ import Quiz from './pages/Quiz'
 
 export default function App() {
   const location = useLocation()
+
+  // Every navigation starts at the top — clicking a feature while scrolled
+  // down should open its page from the beginning, not mid-scroll. Instant so
+  // it doesn't animate through the CSS smooth-scroll or the page transition.
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }, [location.pathname])
 
   return (
     <div className="grain theming relative min-h-screen">

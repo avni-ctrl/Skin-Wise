@@ -184,7 +184,7 @@ export default function Quiz() {
           <h1 className="headline text-[2.2rem]">Your profile is already <em>blooming</em>.</h1>
           <p className="mt-4 text-[0.9rem] text-ink2">You’re signed in — every verdict and conflict check is tuned to you.</p>
           <button onClick={() => navigate('/skin-garden')} className="mt-8 rounded-full bg-accent px-7 py-3 text-[0.85rem] font-medium text-on-accent">
-            Open your Skin Garden
+            Open your Skin Ritual
           </button>
         </div>
       </div>

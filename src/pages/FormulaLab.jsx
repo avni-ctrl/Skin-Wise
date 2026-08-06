@@ -91,7 +91,7 @@ export default function FormulaLab() {
   return (
     <div className="px-4 md:px-8">
       <FeatureHero
-        tag="formula lab · the reading room"
+        tag="formula analysis · the reading room"
         title={[<>Read every</>, <><em>ingredient.</em></>]}
         sub="Search anything on your shelf or wishlist — we score it against your skin, your routine, your city."
         img="/images/garden-doodle.jpg"

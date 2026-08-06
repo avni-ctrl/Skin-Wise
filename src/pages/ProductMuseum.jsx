@@ -130,7 +130,7 @@ export default function ProductMuseum() {
   return (
     <div className="px-4 md:px-8">
       <FeatureHero
-        tag="product museum · the shelf, curated"
+        tag="skin shelf · the shelf, curated"
         title={[<>Your shelf, as a</>, <><em>collection.</em></>]}
         sub="Every bottle catalogued from the day it opens — its real life computed for your city, its fading noted, its oxidising flagged."
         img="/images/portrait-man.png"

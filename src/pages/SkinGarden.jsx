@@ -157,7 +157,7 @@ export default function SkinGarden() {
   return (
     <div className="px-4 md:px-8">
       <FeatureHero
-        tag="skin garden · where rituals take root"
+        tag="skin ritual · where rituals take root"
         title={[<>Your daily</>, <><em>ritual.</em></>]}
         sub="Morning and night, planted step by step — every leaf checked so nothing in your garden fights itself."
         img="https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=1600&auto=format&fit=crop"
