@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase'
 
 const PRODUCT_FIELDS =
-  'id, name, category, price_inr, pao_months, pao_heat_adjusted, is_fragrance_free, hype_score, ingredient_quality_score, brand:brands(id, name, country)'
+  'id, name, category, price_inr, pao_months, pao_heat_adjusted, is_fragrance_free, hype_score, ingredient_quality_score, ingredients_status, ingredients_source_url, brand:brands(id, name, country)'
 
 // Search by product name OR brand name.
 export async function searchProducts(query, limit = 12) {
