@@ -4,12 +4,12 @@ import { useReducedMotion } from '../lib/usePrefs'
 
 // 140px verdict ring: Terracotta 0–40 / Amber 41–70 / Sage 71–100,
 // counting up as the ring sweeps.
-export default function ScoreRing({ score, size = 140 }) {
+export default function ScoreRing({ score, size = 140, color: colorOverride }) {
   const reduced = useReducedMotion()
   const [display, setDisplay] = useState(reduced ? score : 0)
   const r = (size - 14) / 2
   const circumference = 2 * Math.PI * r
-  const color = score <= 40 ? 'var(--terra)' : score <= 70 ? 'var(--amber)' : 'var(--accent)'
+  const color = colorOverride ?? (score <= 40 ? 'var(--terra)' : score <= 70 ? 'var(--amber)' : 'var(--accent)')
 
   useEffect(() => {
     if (reduced) {
