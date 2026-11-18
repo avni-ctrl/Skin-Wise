@@ -7,7 +7,7 @@ import { ease } from '../lib/easing'
 // Display only — there is NO payment or paywall here. Pro is "coming soon" and the
 // button just collects emails (waitlist table, interest = 'pro').
 const PRO_PRICE = '₹199'
-const PRO_PERIOD = 'per month'
+const PRO_PERIOD = 'for 3 months'
 
 const FREE_FEATURES = [
   'Formula Analysis — a score from the real ingredient list, for your skin',
@@ -18,11 +18,10 @@ const FREE_FEATURES = [
 ]
 
 const PRO_FEATURES = [
-  'Photo progress — see your skin change week by week',
-  'Products picked for you, from your skin analysis and past purchases',
-  '1:1 conversations about your skin',
-  'Your best-fit skincare, chosen with you',
-  'Packaging styled to your personality',
+  { title: 'Photo progress', text: 'take one photo a week in the same light. We line them up side by side with your notes, so you can see what is really changing.' },
+  { title: 'A plan made for you', text: 'we read your skin analysis and what you have bought before, then shortlist what suits you and flag what does not.' },
+  { title: '1:1 conversations', text: 'talk through your skin and routine one to one, and choose your best-fit products together.' },
+  { title: 'Packaging styled to you', text: 'your products arrive in packaging matched to your personality.' },
 ]
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -138,12 +137,31 @@ export default function Plans() {
               <span className="text-[0.8rem] text-ink2">{PRO_PERIOD}</span>
             </p>
             <p className="mt-2 text-[0.8rem] text-ink2">Everything in Free, plus a skincare plan made around you.</p>
-            <ul className="mt-6 space-y-3 text-[0.88rem] leading-snug text-ink2">
-              {PRO_FEATURES.map((f) => (
-                <li key={f} className="flex gap-3"><Tick gold />{f}</li>
-              ))}
-            </ul>
-            <div className="mt-auto pt-2">
+            <div className="relative mt-6" role="group" aria-label="Pro features, locked until Pro opens">
+              <ul className="space-y-4 text-[0.88rem] leading-snug text-ink2">
+                {PRO_FEATURES.map((f) => (
+                  <li key={f.title} className="flex gap-3">
+                    <Tick gold />
+                    <span><span className="text-ink">{f.title}</span> — {f.text}</span>
+                  </li>
+                ))}
+              </ul>
+              {/* light grey glass: the features stay readable behind it, the lock sits in front */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -inset-3 flex items-center justify-center rounded-2xl"
+                style={{ background: 'rgba(165,165,165,0.30)' }}
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ink text-bg shadow-[var(--shadow)]">
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="5" y="11" width="14" height="9.5" rx="2.2" />
+                    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+                    <circle cx="12" cy="15.7" r="1.1" fill="currentColor" stroke="none" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+            <div className="mt-auto pt-8">
               <NotifyForm />
             </div>
           </PlanCard>
