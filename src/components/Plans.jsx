@@ -18,7 +18,7 @@ const FREE_FEATURES = [
 ]
 
 const PRO_FEATURES = [
-  { title: 'Photo progress', text: 'take one photo a week in the same light. We line them up side by side with your notes, so you can see what is really changing.' },
+  { title: 'Photo progress timeline', text: 'your daily check-ins lined up side by side, with the products you used in between, so you can see what is really changing.' },
   { title: 'A plan made for you', text: 'we read your skin analysis and what you have bought before, then shortlist what suits you and flag what does not.' },
   { title: '1:1 conversations', text: 'talk through your skin and routine one to one, and choose your best-fit products together.' },
   { title: 'Packaging styled to you', text: 'your products arrive in packaging matched to your personality.' },
