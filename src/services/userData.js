@@ -1,6 +1,7 @@
 // User-owned data: profile, routine, shelf, photo check-ins.
 // All tables are RLS-protected (owner-only, keyed to auth.uid()).
 import { supabase } from '../lib/supabase'
+import { computeShelfStatus as computeStatus, toISODate } from './shelfLife'
 
 const PENDING_KEY = 'skinwise_pending_profile'
 
@@ -104,47 +105,54 @@ export async function reorderRoutine(items) {
 
 // ---------- shelf (Product Museum) ----------
 
-const SHELF_FIELDS = 'id, product_id, opened_on, mfd, expiry_date, calculated_expires, status, product:products(id, name, category, price_inr, pao_months, pao_heat_adjusted, brand:brands(name))'
+const SHELF_FIELDS = 'id, product_id, purchased_on, opened_on, mfd, expiry_date, calculated_expires, status, product:products(id, name, category, price_inr, pao_months, pao_heat_adjusted, brand:brands(name))'
 
-export function computeShelfStatus(item) {
-  const pao = item.product?.pao_months ?? 12
-  const opened = item.opened_on ? new Date(item.opened_on) : null
-  let expires = item.expiry_date ? new Date(item.expiry_date) : null
-  if (opened) {
-    const paoEnd = new Date(opened)
-    paoEnd.setMonth(paoEnd.getMonth() + pao)
-    expires = expires && expires < paoEnd ? expires : paoEnd
-  }
-  if (!expires) return { status: 'good', expires: null, lifeLeft: 1 }
+const withStatus = (item, city) => ({ ...item, ...computeStatus(item, city) })
 
-  const now = new Date()
-  const totalMs = opened ? expires - opened : 1
-  const leftMs = expires - now
-  const lifeLeft = Math.max(0, Math.min(1, totalMs > 0 ? leftMs / totalMs : 0))
-  let status = 'good'
-  if (leftMs <= 0) status = 'expired'
-  else if (leftMs < 1000 * 60 * 60 * 24 * 30) status = 'expiring_soon'
-  return { status, expires, lifeLeft }
+// Keep the database copy of the computed expiry fresh (best-effort; the page also recomputes live).
+async function saveComputed(item, city) {
+  const s = computeStatus(item, city)
+  await supabase
+    .from('user_shelf')
+    .update({
+      calculated_expires: s.expires ? toISODate(s.expires) : null,
+      status: s.status === 'unopened' ? 'good' : s.status,
+    })
+    .eq('id', item.id)
 }
 
-export async function getShelf(userId) {
+export async function getShelf(userId, city = null) {
   const { data, error } = await supabase
     .from('user_shelf')
     .select(SHELF_FIELDS)
     .eq('user_id', userId)
     .order('id', { ascending: true })
   if (error) throw error
-  return (data ?? []).map((item) => ({ ...item, ...computeShelfStatus(item) }))
+  return (data ?? []).map((item) => withStatus(item, city))
 }
 
-export async function addShelfItem(userId, productId, openedOn = null) {
+// openedOn = null means "bought, not opened yet" — the clock starts when the user opens it.
+export async function addShelfItem(userId, productId, openedOn = null, { purchasedOn = null, expiryDate = null, city = null } = {}) {
   const { data, error } = await supabase
     .from('user_shelf')
-    .insert({ user_id: userId, product_id: productId, opened_on: openedOn })
+    .insert({ user_id: userId, product_id: productId, opened_on: openedOn, purchased_on: purchasedOn, expiry_date: expiryDate })
     .select(SHELF_FIELDS)
     .single()
   if (error) throw error
-  return { ...data, ...computeShelfStatus(data) }
+  await saveComputed(data, city)
+  return withStatus(data, city)
+}
+
+// Change any of: purchasedOn, openedOn, expiryDate (e.g. "I opened it today").
+export async function setShelfDates(id, dates, city = null) {
+  const patch = {}
+  if ('purchasedOn' in dates) patch.purchased_on = dates.purchasedOn || null
+  if ('openedOn' in dates) patch.opened_on = dates.openedOn || null
+  if ('expiryDate' in dates) patch.expiry_date = dates.expiryDate || null
+  const { data, error } = await supabase.from('user_shelf').update(patch).eq('id', id).select(SHELF_FIELDS).single()
+  if (error) throw error
+  await saveComputed(data, city)
+  return withStatus(data, city)
 }
 
 export async function removeShelfItem(id) {
