@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import QuoteStrip from '../components/QuoteStrip'
 import Footer from '../components/Footer'
+import Plans from '../components/Plans'
 import SkinDive from '../components/SkinDive'
 import SpotlightCard from '../components/SpotlightCard'
 import { useAuth } from '../context/AuthContext'
@@ -487,6 +488,8 @@ export default function Home() {
           </Reveal>
         </div>
       </section>
+
+      <Plans />
 
       <QuoteStrip />
       <Footer />

@@ -4,17 +4,22 @@ import { AnimatePresence, motion } from 'framer-motion'
 import FeatureHero from '../components/FeatureHero'
 import ProductSearch from '../components/ProductSearch'
 import Footer from '../components/Footer'
-import { addShelfItem, getShelf, removeShelfItem } from '../services/userData'
+import { addShelfItem, getShelf, removeShelfItem, setShelfDates } from '../services/userData'
+import { reminderCopy, todayISO } from '../services/shelfLife'
 import { useAuth } from '../context/AuthContext'
 import { ease } from '../lib/easing'
 import { useReducedMotion } from '../lib/usePrefs'
 
 const STATUS_META = {
+  unopened: { label: 'sealed', color: 'var(--gold2)' },
   good: { label: 'in bloom', color: 'var(--accent)' },
   expiring_soon: { label: 'fading', color: 'var(--amber)' },
   expired: { label: 'rested', color: 'var(--terra)' },
   oxidized: { label: 'oxidized', color: 'var(--terra)' },
 }
+
+const fmt = (iso) =>
+  iso ? new Date(`${String(iso).slice(0, 10)}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : null
 
 function SummaryBlob({ count, label, color, speed }) {
   const reduced = useReducedMotion()
@@ -37,7 +42,7 @@ function SummaryBlob({ count, label, color, speed }) {
   )
 }
 
-function ShelfCard({ item, onRemove }) {
+function ShelfCard({ item, onRemove, onOpen }) {
   const meta = STATUS_META[item.status] ?? STATUS_META.good
   const dim = item.status === 'expired' || item.status === 'oxidized'
   return (
@@ -83,43 +88,113 @@ function ShelfCard({ item, onRemove }) {
         </span>
         <span className="text-[0.68rem] text-ink2">
           {item.expires
-            ? item.status === 'expired'
-              ? `rested ${item.expires.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`
-              : `until ${item.expires.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`
-            : item.opened_on
-              ? `opened ${item.opened_on}`
-              : 'unopened'}
+            ? item.daysLeft <= 0
+              ? `${item.status === 'oxidized' ? 'oxidized' : 'rested'} ${fmt(item.expires.toISOString())}`
+              : `${item.daysLeft} day${item.daysLeft === 1 ? '' : 's'} left`
+            : 'clock starts when opened'}
         </span>
       </div>
-      <button
-        onClick={onRemove}
-        className="absolute bottom-3 right-4 text-[0.7rem] text-ink2/60 hover:text-terra transition-colors"
-      >
-        retire
-      </button>
+
+      <p className="mt-3 text-[0.7rem] leading-relaxed text-ink2">
+        {item.purchased_on && <>bought {fmt(item.purchased_on)}</>}
+        {item.purchased_on && item.opened_on && ' · '}
+        {item.opened_on && <>opened {fmt(item.opened_on)}</>}
+        {!item.purchased_on && !item.opened_on && 'dates not added'}
+      </p>
+
+      {(item.status === 'expiring_soon' || item.status === 'oxidized' || item.status === 'expired') && item.expires && (
+        <p className="mt-2 text-[0.72rem] leading-relaxed" style={{ color: meta.color }}>
+          {item.status === 'expiring_soon'
+            ? reminderCopy({ productName: item.product?.name, daysLeft: item.daysLeft, reason: item.reason, expires: item.expires }).line
+            : item.reason === 'oxidation'
+              ? 'Vitamin C has oxidised — it is likely no longer effective. Time to replace it.'
+              : 'Past its safe window — better to retire it.'}
+        </p>
+      )}
+
+      <div className="mt-4 flex items-center justify-between">
+        {!item.opened_on ? (
+          <button
+            onClick={onOpen}
+            className="rounded-full border border-gold2 px-4 py-1.5 text-[0.7rem] text-gold2 transition-colors hover:bg-gold2 hover:text-bg"
+          >
+            I opened it today
+          </button>
+        ) : (
+          <span />
+        )}
+        <button onClick={onRemove} className="text-[0.7rem] text-ink2/60 transition-colors hover:text-terra">
+          retire
+        </button>
+      </div>
     </motion.div>
   )
 }
 
 export default function ProductMuseum() {
-  const { session } = useAuth()
+  const { session, profile } = useAuth()
+  const city = profile?.city ?? null
   const [shelf, setShelf] = useState([])
   const [adding, setAdding] = useState(false)
+  const [pending, setPending] = useState(null) // product chosen, waiting for dates
+  const [form, setForm] = useState({ opened: false, purchasedOn: '', openedOn: '', expiryDate: '' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    if (session?.user) getShelf(session.user.id).then(setShelf).catch(console.error)
-  }, [session])
+    if (session?.user) getShelf(session.user.id, city).then(setShelf).catch(console.error)
+  }, [session, city])
 
   const counts = {
     expired: shelf.filter((s) => s.status === 'expired' || s.status === 'oxidized').length,
     expiring: shelf.filter((s) => s.status === 'expiring_soon').length,
-    good: shelf.filter((s) => s.status === 'good').length,
+    good: shelf.filter((s) => s.status === 'good' || s.status === 'unopened').length,
+  }
+  const needAttention = counts.expired + counts.expiring
+  const today = todayISO()
+
+  function choose(product) {
+    setPending(product)
+    setError('')
+    setForm({ opened: false, purchasedOn: today, openedOn: today, expiryDate: '' })
   }
 
-  async function add(product) {
-    const item = await addShelfItem(session.user.id, product.id, new Date().toISOString().slice(0, 10))
-    setShelf((v) => [...v, item])
+  function closeForm() {
+    setPending(null)
     setAdding(false)
+    setError('')
+  }
+
+  async function confirmAdd(e) {
+    e.preventDefault()
+    if (form.purchasedOn && form.purchasedOn > today) return setError('The purchase date cannot be in the future.')
+    if (form.opened && !form.openedOn) return setError('Please pick the date you opened it.')
+    if (form.opened && form.openedOn > today) return setError('The opened date cannot be in the future.')
+    if (form.opened && form.purchasedOn && form.openedOn < form.purchasedOn) return setError('You cannot open a product before you bought it.')
+    setSaving(true)
+    try {
+      const item = await addShelfItem(session.user.id, pending.id, form.opened ? form.openedOn : null, {
+        purchasedOn: form.purchasedOn || null,
+        expiryDate: form.expiryDate || null,
+        city,
+      })
+      setShelf((v) => [...v, item])
+      closeForm()
+    } catch (err) {
+      console.error(err)
+      setError('Could not save that. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function markOpened(item) {
+    try {
+      const updated = await setShelfDates(item.id, { openedOn: today }, city)
+      setShelf((v) => v.map((s) => (s.id === item.id ? updated : s)))
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   async function remove(id) {
@@ -158,6 +233,12 @@ export default function ProductMuseum() {
               <SummaryBlob count={counts.good} label="in bloom" color="var(--accent)" speed={6.8} />
             </div>
 
+            {needAttention > 0 && (
+              <p className="mx-auto mt-8 max-w-md rounded-2xl border border-amber/40 bg-amber/10 px-5 py-3 text-center text-[0.8rem] text-ink">
+                {needAttention} product{needAttention === 1 ? ' needs' : 's need'} your attention — check the cards below.
+              </p>
+            )}
+
             <div className="mt-12">
               {shelf.length === 0 ? (
                 <p className="py-14 text-center text-[1.2rem] italic text-ink2" style={{ fontFamily: 'var(--font-display)' }}>
@@ -167,7 +248,7 @@ export default function ProductMuseum() {
                 <motion.div layout className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <AnimatePresence>
                     {shelf.map((item) => (
-                      <ShelfCard key={item.id} item={item} onRemove={() => remove(item.id)} />
+                      <ShelfCard key={item.id} item={item} onRemove={() => remove(item.id)} onOpen={() => markOpened(item)} />
                     ))}
                   </AnimatePresence>
                 </motion.div>
@@ -175,9 +256,82 @@ export default function ProductMuseum() {
             </div>
 
             <div className="mt-10 flex justify-center">
-              {adding ? (
+              {pending ? (
+                <form onSubmit={confirmAdd} className="w-full max-w-[560px] rounded-[1.6rem] border border-line bg-card/85 p-6 shadow-[var(--shadow)] backdrop-blur-sm">
+                  <p className="text-[0.95rem] text-ink">{pending.name}</p>
+                  <p className="text-[0.72rem] text-ink2">{pending.brand?.name}</p>
+
+                  <label className="mt-5 block text-[0.75rem] text-ink2">
+                    Bought on <span className="opacity-70">(optional)</span>
+                    <input
+                      type="date"
+                      max={today}
+                      value={form.purchasedOn}
+                      onChange={(e) => setForm({ ...form, purchasedOn: e.target.value })}
+                      className="mt-1 block w-full rounded-xl border border-line bg-transparent px-3 py-2 text-[0.85rem] text-ink"
+                    />
+                  </label>
+
+                  <div className="mt-5 flex gap-3 text-[0.8rem]">
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, opened: false })}
+                      className={`flex-1 rounded-xl border px-3 py-2 transition-colors ${!form.opened ? 'border-gold2 text-gold2' : 'border-line text-ink2'}`}
+                    >
+                      Not opened yet
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, opened: true })}
+                      className={`flex-1 rounded-xl border px-3 py-2 transition-colors ${form.opened ? 'border-gold2 text-gold2' : 'border-line text-ink2'}`}
+                    >
+                      Already opened
+                    </button>
+                  </div>
+
+                  {form.opened ? (
+                    <label className="mt-4 block text-[0.75rem] text-ink2">
+                      Opened on
+                      <input
+                        type="date"
+                        max={today}
+                        value={form.openedOn}
+                        onChange={(e) => setForm({ ...form, openedOn: e.target.value })}
+                        className="mt-1 block w-full rounded-xl border border-line bg-transparent px-3 py-2 text-[0.85rem] text-ink"
+                      />
+                    </label>
+                  ) : (
+                    <p className="mt-3 text-[0.72rem] italic text-ink2">
+                      No problem — its clock starts the day you tap “I opened it today”.
+                    </p>
+                  )}
+
+                  <label className="mt-4 block text-[0.75rem] text-ink2">
+                    Expiry date printed on the pack <span className="opacity-70">(optional)</span>
+                    <input
+                      type="date"
+                      value={form.expiryDate}
+                      onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
+                      className="mt-1 block w-full rounded-xl border border-line bg-transparent px-3 py-2 text-[0.85rem] text-ink"
+                    />
+                  </label>
+
+                  {error && <p className="mt-3 text-[0.75rem] text-terra">{error}</p>}
+
+                  <div className="mt-6 flex items-center justify-between">
+                    <button type="button" onClick={closeForm} className="text-[0.78rem] text-ink2">cancel</button>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="rounded-full bg-accent px-7 py-2.5 text-[0.85rem] font-medium text-on-accent disabled:opacity-60"
+                    >
+                      {saving ? 'Saving…' : 'Add to shelf'}
+                    </button>
+                  </div>
+                </form>
+              ) : adding ? (
                 <div className="w-full max-w-[560px]">
-                  <ProductSearch compact placeholder="Which bottle joins the collection?" onSelect={add} autoFocus />
+                  <ProductSearch compact placeholder="Which bottle joins the collection?" onSelect={choose} autoFocus />
                   <button onClick={() => setAdding(false)} className="mx-auto mt-3 block text-[0.78rem] text-ink2">cancel</button>
                 </div>
               ) : (
