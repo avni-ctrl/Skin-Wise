@@ -1,116 +1,48 @@
 // getProductVerdict — the Formula Lab brain.
-// Reads real rows from Supabase (products, ingredients, product_ingredients,
-// conflict_pairs) and scores them against the user's saved profile + routine.
-// This function is the seam where an external analysis API could plug in
-// later; v1 computes entirely from the founder's ingredient database.
+// Scores a product's REAL ingredient list against the user's saved profile + routine.
+// The maths lives in ./scoring.js (pure + unit-tested); this file gathers the data.
+//
+// A verdict is only produced when the ingredient list is trustworthy
+// (fetched from the web by /api/lookup, or hand-verified). Heuristic "estimated"
+// lists and products with no list return { unavailable: true } — never a made-up score.
 import { getProduct, getProductIngredients } from './catalog'
 import { checkProductAgainstRoutine } from './conflicts'
-
-const CONCERN_ACTIVES = {
-  acne: ['Salicylic Acid', 'Benzoyl Peroxide', 'Azelaic Acid', 'Niacinamide', 'Melaleuca Alternifolia Leaf Oil', 'Azadirachta Indica Leaf Extract'],
-  pigmentation: ['L-Ascorbic Acid', 'Ascorbyl Glucoside', 'Sodium Ascorbyl Phosphate', 'Alpha Arbutin', 'Kojic Acid', 'Tranexamic Acid', 'Azelaic Acid', 'Glycyrrhiza Glabra Root Extract'],
-  'anti-aging': ['Retinol', 'Hydroxypinacolone Retinoate', 'Bakuchiol', 'Matrixyl 3000', 'Palmitoyl Tripeptide-1', 'Acetyl Hexapeptide-3', 'Coenzyme Q10', 'Adenosine'],
-  dullness: ['Glycolic Acid', 'Lactic Acid', 'Mandelic Acid', 'Ascorbyl Glucoside', 'L-Ascorbic Acid', 'Emblica Officinalis Fruit Extract'],
-  hydration: ['Sodium Hyaluronate', 'Hyaluronic Acid', 'Hydrolyzed Hyaluronic Acid', 'Glycerin', 'Ceramide NP', 'Squalane', 'Panthenol', 'Polyglutamic Acid'],
-  pores: ['Niacinamide', 'Salicylic Acid'],
-  'dark circles': ['Adenosine', 'Sodium Hyaluronate'],
-  redness: ['Centella Asiatica Extract', 'Madecassoside', 'Panthenol', 'Allantoin', 'Colloidal Oatmeal', 'Beta-Glucan'],
-}
-
-const TIMELINE_RULES = [
-  { match: ['Salicylic Acid', 'Glycolic Acid', 'Lactic Acid', 'Mandelic Acid'], weeks: [
-    { label: 'Week 1–2', note: 'Possible purging as pores clear — small breakouts where congestion already sat. Normal.' },
-    { label: 'Week 3–4', note: 'Texture smooths; blackheads and congestion visibly reduce.' },
-    { label: 'Week 6+', note: 'Tone looks more even. Keep SPF strict — exfoliated skin burns faster.' },
-  ]},
-  { match: ['Niacinamide'], weeks: [
-    { label: 'Week 2–4', note: 'Oil production starts to balance; redness calms.' },
-    { label: 'Week 8', note: 'Pores appear tighter; barrier measurably stronger.' },
-  ]},
-  { match: ['Retinol', 'Hydroxypinacolone Retinoate', 'Bakuchiol'], weeks: [
-    { label: 'Week 1–3', note: 'Adjustment: mild dryness or flaking. Buffer with moisturizer.' },
-    { label: 'Week 8–12', note: 'Fine lines soften; skin renews on a faster cycle.' },
-    { label: 'Month 6', note: 'Collagen-level changes show — this is the long game.' },
-  ]},
-  { match: ['L-Ascorbic Acid', 'Ascorbyl Glucoside', 'Sodium Ascorbyl Phosphate', 'Alpha Arbutin', 'Kojic Acid', 'Tranexamic Acid'], weeks: [
-    { label: 'Week 2–4', note: 'First glow — brightness before spot-fading.' },
-    { label: 'Week 8–12', note: 'Dark spots and post-acne marks visibly fade.' },
-  ]},
-  { match: ['Ceramide NP', 'Sodium Hyaluronate', 'Squalane', 'Panthenol', 'Glycerin'], weeks: [
-    { label: 'Immediately', note: 'Plumper, more comfortable skin from the first use.' },
-    { label: 'Week 2–4', note: 'Barrier repair compounds — less tightness, less reactivity.' },
-  ]},
-  { match: ['Zinc Oxide', 'Titanium Dioxide', 'Ethylhexyl Methoxycinnamate', 'Butyl Methoxydibenzoylmethane'], weeks: [
-    { label: 'Immediately', note: 'Protection starts day one.' },
-    { label: 'Ongoing', note: 'The quiet hero: most visible aging is unprotected UV. Consistency is the result.' },
-  ]},
-]
+import { scoreFormula, pickKeyIngredients, buildTimeline } from './scoring'
 
 const HOT_CITIES = ['mumbai', 'delhi', 'chennai', 'kolkata', 'hyderabad', 'ahmedabad', 'jaipur', 'surat', 'nagpur', 'lucknow', 'kanpur', 'indore', 'bhopal', 'patna', 'vadodara']
 
-function scoreLabel(score) {
-  if (score >= 71) return 'SAFE'
-  if (score >= 41) return 'CAUTION'
-  return 'AVOID'
+export const hasReliableIngredients = (product) => ['auto', 'verified'].includes(product?.ingredients_status)
+
+function dedupeBy(list, keyFn, limit) {
+  const seen = new Set()
+  const out = []
+  for (const item of list) {
+    const k = keyFn(item)
+    if (seen.has(k)) continue
+    seen.add(k)
+    out.push(item)
+    if (out.length >= limit) break
+  }
+  return out
 }
 
 export async function getProductVerdict(productId, profile = null, routineItems = []) {
-  const [product, ingredients] = await Promise.all([
-    getProduct(productId),
-    getProductIngredients(productId),
-  ])
-
-  const concerns = (profile?.skin_concerns ?? []).map((c) => c.toLowerCase())
-  const skinType = (profile?.skin_type ?? '').toLowerCase()
-  const allergens = (profile?.known_allergens ?? []).map((a) => a.toLowerCase())
-
-  let score = 78
-  const flags = []
-  let concernBoost = 0
-
-  for (const ing of ingredients) {
-    if (ing.is_harmful_general) {
-      score -= 18
-      flags.push({ type: 'avoid', text: `${ing.common_name || ing.inci_name} is flagged as generally harmful.` })
-    }
-    const badTypes = (ing.harmful_for_skin_types ?? []).map((t) => t.toLowerCase())
-    if (skinType && badTypes.some((t) => t.includes(skinType))) {
-      score -= 8
-      flags.push({ type: 'caution', text: `${ing.common_name || ing.inci_name} can be harsh on ${skinType} skin.` })
-    }
-    const badConcerns = (ing.harmful_for_concerns ?? []).map((c) => c.toLowerCase())
-    if (concerns.some((c) => badConcerns.some((b) => b.includes(c) || c.includes(b)))) {
-      score -= 6
-      flags.push({ type: 'caution', text: `${ing.common_name || ing.inci_name} may aggravate one of your concerns.` })
-    }
-    if (ing.is_fragrance) {
-      const sensitiveToFragrance = allergens.includes('fragrance') || skinType === 'sensitive'
-      score -= sensitiveToFragrance ? 10 : 3
-      if (sensitiveToFragrance) flags.push({ type: 'caution', text: `Contains fragrance — you flagged fragrance sensitivity.` })
-    }
-    if (ing.inci_name === 'Alcohol Denat' && allergens.includes('alcohol')) {
-      score -= 8
-      flags.push({ type: 'caution', text: 'Contains denatured alcohol, which you flagged.' })
-    }
-    if ((ing.comedogenic_rating ?? 0) >= 3 && (skinType === 'oily' || concerns.includes('acne') || concerns.includes('pores'))) {
-      score -= 4 * ((ing.comedogenic_rating ?? 3) - 2)
-      flags.push({ type: 'caution', text: `${ing.common_name || ing.inci_name} is comedogenic (${ing.comedogenic_rating}/5) — watch for clogged pores.` })
-    }
-    if (ing.oxidizes) score -= 2
-
-    for (const concern of concerns) {
-      if ((CONCERN_ACTIVES[concern] ?? []).includes(ing.inci_name)) {
-        concernBoost = Math.min(concernBoost + 5, 15)
-        flags.push({ type: 'good', text: `${ing.common_name || ing.inci_name} directly targets ${concern}.` })
-        break
-      }
-    }
+  const product = await getProduct(productId)
+  if (!hasReliableIngredients(product)) {
+    return { product, unavailable: true, dataStatus: product.ingredients_status }
   }
-  score = Math.round(Math.max(5, Math.min(98, score + concernBoost)))
+  const ingredients = await getProductIngredients(productId)
+  if (!ingredients.length) return { product, unavailable: true, dataStatus: 'missing' }
 
-  // Routine conflicts — the user's REAL saved routine, not a demo.
+  const scored = scoreFormula({ ingredients, profile })
+  let { score, label } = scored
+
+  // Routine conflicts — the user's REAL saved routine.
   const routineConflicts = await checkProductAgainstRoutine(ingredients, routineItems)
-  if (routineConflicts.some((c) => c.severity === 'high')) score = Math.min(score, 68)
+  if (routineConflicts.some((c) => c.severity === 'high')) {
+    score = Math.min(score, 60)
+    if (label === 'SAFE') label = 'CAUTION'
+  }
 
   // Shelf life — PAO plus oxidation plus city climate.
   const oxidizers = ingredients.filter((i) => i.oxidizes)
@@ -132,31 +64,28 @@ export async function getProductVerdict(productId, profile = null, routineItems 
     ].filter(Boolean).join(' '),
   }
 
-  // Realistic timeline from the actives actually present.
-  const inciSet = new Set(ingredients.map((i) => i.inci_name))
-  const timeline = []
-  for (const rule of TIMELINE_RULES) {
-    if (rule.match.some((m) => inciSet.has(m))) {
-      for (const w of rule.weeks) if (!timeline.some((t) => t.label === w.label && t.note === w.note)) timeline.push(w)
-    }
-  }
-  if (!timeline.length) timeline.push({ label: 'Week 2–4', note: 'Comfort-focused formula — expect steady maintenance rather than dramatic change.' })
+  const { keyIngredients, onlySupporting } = pickKeyIngredients(ingredients, profile)
+  const timeline = buildTimeline(ingredients, profile)
 
-  const keyIngredients = ingredients
-    .filter((i) => i.is_active)
-    .sort((a, b) => (a.position ?? 99) - (b.position ?? 99))
-    .slice(0, 6)
+  const pros = dedupeBy(scored.flags.filter((f) => f.type === 'good'), (f) => f.ingredient, 4)
+  const cons = dedupeBy(scored.flags.filter((f) => f.type !== 'good'), (f) => f.ingredient, 4)
 
   return {
     product,
+    dataStatus: product.ingredients_status,
+    sourceUrl: product.ingredients_source_url,
     ingredients,
     keyIngredients,
+    onlySupporting,
     score,
-    label: scoreLabel(score),
-    flags,
+    label,
+    subScores: scored.subScores,
+    concernDetail: scored.concernDetail,
+    pros,
+    cons,
     routineConflicts,
     shelfLife,
     timeline,
-    personalized: Boolean(profile),
+    personalized: scored.personalized,
   }
 }

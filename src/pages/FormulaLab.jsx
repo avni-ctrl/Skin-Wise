@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import FeatureHero from '../components/FeatureHero'
@@ -8,6 +8,7 @@ import Accordion from '../components/Accordion'
 import Footer from '../components/Footer'
 import { backdropBus } from '../components/backdropBus'
 import { getProductVerdict } from '../services/verdict'
+import { ensureIngredients, getExplanation } from '../services/lookup'
 import { findDupes } from '../services/dupes'
 import { getRoutine } from '../services/userData'
 import { useAuth } from '../context/AuthContext'
@@ -57,35 +58,69 @@ export default function FormulaLab() {
   const [verdict, setVerdict] = useState(null)
   const [swap, setSwap] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [phase, setPhase] = useState('reading') // reading | fetching
+  const [unavailable, setUnavailable] = useState(null)
+  const [explain, setExplain] = useState({ state: 'idle', content: null })
+  const runId = useRef(0)
 
   useEffect(() => {
     if (session?.user) getRoutine(session.user.id).then(setRoutine).catch(console.error)
   }, [session])
 
   async function analyze(product) {
+    const run = ++runId.current
+    const stale = () => run !== runId.current
     setSelected(product)
     setVerdict(null)
     setSwap(null)
+    setUnavailable(null)
+    setExplain({ state: 'idle', content: null })
+    setPhase('reading')
     setLoading(true)
     try {
-      const v = await getProductVerdict(product.id, profile, routine)
+      let v = await getProductVerdict(product.id, profile, routine)
+      if (stale()) return
+      if (v.unavailable) {
+        // No trustworthy ingredient list yet — go and find it on the web (once; cached for everyone after).
+        setPhase('fetching')
+        const found = await ensureIngredients(product.id)
+        if (stale()) return
+        if (found.status !== 'ready') {
+          setUnavailable({ product, reason: found.status })
+          return
+        }
+        v = await getProductVerdict(product.id, profile, routine)
+        if (stale()) return
+        if (v.unavailable) {
+          setUnavailable({ product, reason: 'not_found' })
+          return
+        }
+      }
       setVerdict(v)
       // the backdrop reflects the USER's real result
       if (v.routineConflicts.length) backdropBus.pulseConflict()
       else backdropBus.pulseHarmony()
       findDupes(product.id, 3).then((d) => {
+        if (stale()) return
         const best = d.dupes.find((x) => x.cheaper) ?? d.dupes[0]
         if (best) setSwap(best)
       }).catch(() => {})
+      // Personalised write-up arrives a moment later; the score is already on screen.
+      setExplain({ state: 'loading', content: null })
+      getExplanation(product.id, profile).then((r) => {
+        if (stale()) return
+        setExplain(r.status === 'ok' ? { state: 'ready', content: r.content } : { state: 'none', content: null })
+      })
     } catch (e) {
       console.error(e)
+      if (!stale()) setUnavailable({ product, reason: 'error' })
     } finally {
-      setLoading(false)
+      if (!stale()) setLoading(false)
     }
   }
 
   const labelColor = verdict
-    ? verdict.score <= 40 ? 'var(--terra)' : verdict.score <= 70 ? 'var(--amber)' : 'var(--accent)'
+    ? verdict.label === 'AVOID' ? 'var(--terra)' : verdict.label === 'CAUTION' ? 'var(--amber)' : 'var(--accent)'
     : 'var(--accent)'
 
   return (
@@ -114,13 +149,48 @@ export default function FormulaLab() {
           {loading && selected && (
             <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mt-14 text-center">
               <p className="italic text-ink2" style={{ fontFamily: 'var(--font-display)' }}>
-                Reading {selected.name}&rsquo;s label…
+                {phase === 'fetching'
+                  ? `Finding ${selected.name}’s official ingredient list…`
+                  : `Reading ${selected.name}’s label…`}
               </p>
+              {phase === 'fetching' && (
+                <p className="mx-auto mt-2 max-w-sm text-[0.75rem] text-ink2">
+                  First time anyone has searched this one, so we’re looking it up on the web. Takes about 10–25 seconds — next time it’s instant.
+                </p>
+              )}
               <motion.div
                 className="mx-auto mt-6 h-3 w-3 rounded-full bg-gold"
                 animate={{ scale: [1, 2, 1], opacity: [0.4, 1, 0.4] }}
                 transition={{ duration: 1.1, repeat: Infinity }}
               />
+            </motion.div>
+          )}
+
+          {unavailable && !loading && (
+            <motion.div
+              key="unavailable"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mt-14 rounded-[2rem] border border-line bg-card/85 p-8 text-center shadow-[var(--shadow)] backdrop-blur-md"
+            >
+              <p className="tag-caps mb-3">no verified label yet</p>
+              <h2 className="text-[1.3rem]" style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+                {unavailable.product.name}
+              </h2>
+              <p className="mx-auto mt-3 max-w-md text-[0.85rem] leading-relaxed text-ink2">
+                {unavailable.reason === 'busy'
+                  ? 'We’ve looked up a lot of products today and need a short breather. Please try again later — we’d rather wait than guess your score.'
+                  : unavailable.reason === 'unavailable' || unavailable.reason === 'error'
+                    ? 'We couldn’t reach our ingredient lookup just now. Try again in a minute.'
+                    : 'We couldn’t find a trustworthy ingredient list for this product online, and we won’t guess one — a made-up score is worse than none. Try a nearby variant, or check back soon.'}
+              </p>
+              <button
+                onClick={() => analyze(unavailable.product)}
+                className="mt-6 rounded-full border border-gold2 px-6 py-2.5 text-[0.8rem] text-gold2 transition-colors hover:bg-gold2 hover:text-bg"
+              >
+                Try again
+              </button>
             </motion.div>
           )}
 
@@ -136,7 +206,7 @@ export default function FormulaLab() {
               {/* verdict card */}
               <div className="rounded-[2rem] border border-line bg-card/85 p-7 shadow-[var(--shadow)] backdrop-blur-md md:p-10">
                 <div className="flex flex-col items-center gap-7 md:flex-row md:gap-12">
-                  <ScoreRing score={verdict.score} />
+                  <ScoreRing score={verdict.score} color={labelColor} />
                   <div className="text-center md:text-left">
                     <p className="smallcaps text-[1.5rem] tracking-[0.3em]" style={{ color: labelColor }}>
                       {verdict.label}
@@ -149,11 +219,24 @@ export default function FormulaLab() {
                       {verdict.product.price_inr != null && ` · ₹${verdict.product.price_inr.toLocaleString('en-IN')}`}
                       {verdict.product.category && ` · ${verdict.product.category}`}
                     </p>
-                    <p className="mt-3 max-w-md text-[0.82rem] italic text-ink2" style={{ fontFamily: 'var(--font-display)' }}>
+                    <div className="mt-4 flex flex-wrap justify-center gap-2 md:justify-start">
+                      <span className="rounded-full border border-line px-3 py-1 text-[0.7rem] text-ink2">Safety for you · {verdict.subScores.safety}</span>
+                      <span className="rounded-full border border-line px-3 py-1 text-[0.7rem] text-ink2">Goal fit · {verdict.subScores.goal}</span>
+                    </div>
+                    <p className="mt-3 max-w-md text-[0.78rem] italic text-ink2" style={{ fontFamily: 'var(--font-display)' }}>
                       {verdict.personalized
-                        ? 'Scored against your saved skin profile and routine.'
+                        ? 'Scored from the real ingredient list against your skin profile and routine.'
                         : 'General score — build your profile for a personal one.'}
                     </p>
+                    {verdict.sourceUrl && (
+                      <p className="mt-1 text-[0.7rem] text-ink2">
+                        {verdict.dataStatus === 'verified' ? 'Verified label' : 'Ingredients auto-read from'}{' '}
+                        <a href={verdict.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-gold2 underline underline-offset-4">
+                          {(() => { try { return new URL(verdict.sourceUrl).hostname.replace(/^www\./, '') } catch { return 'source' } })()}
+                        </a>
+                        {verdict.dataStatus === 'auto' && ' — double-check on the pack.'}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -161,19 +244,72 @@ export default function FormulaLab() {
 
                 <div className="mt-10">
                   <Accordion
-                    defaultOpen={verdict.routineConflicts.length ? 1 : 0}
+                    defaultOpen={0}
                     items={[
+                      {
+                        title: 'Why this score — for your skin',
+                        content: (
+                          <div className="space-y-4">
+                            {explain.state === 'loading' && <p className="italic">Writing your personal read…</p>}
+                            {explain.state === 'ready' && (
+                              <>
+                                <p className="text-ink" style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem' }}>{explain.content.headline}</p>
+                                {explain.content.suits.length > 0 && (
+                                  <div>
+                                    <p className="smallcaps mb-1 text-[0.68rem] text-ink">Works for you</p>
+                                    <ul className="list-disc space-y-1 pl-5">{explain.content.suits.map((t, i) => <li key={i}>{t}</li>)}</ul>
+                                  </div>
+                                )}
+                                {explain.content.watch_out.length > 0 && (
+                                  <div>
+                                    <p className="smallcaps mb-1 text-[0.68rem] text-ink">Watch out</p>
+                                    <ul className="list-disc space-y-1 pl-5">{explain.content.watch_out.map((t, i) => <li key={i}>{t}</li>)}</ul>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                            {explain.state !== 'ready' && explain.state !== 'loading' && (
+                              <>
+                                {verdict.pros.length === 0 && verdict.cons.length === 0 && (
+                                  <p>No ingredient stands out for or against your profile — a neutral formula for you.</p>
+                                )}
+                                {verdict.pros.length > 0 && (
+                                  <ul className="list-disc space-y-1 pl-5">{verdict.pros.map((f, i) => <li key={i}>{f.text}</li>)}</ul>
+                                )}
+                                {verdict.cons.length > 0 && (
+                                  <ul className="list-disc space-y-1 pl-5">{verdict.cons.map((f, i) => <li key={i}>{f.text}</li>)}</ul>
+                                )}
+                              </>
+                            )}
+                            {verdict.concernDetail.length > 0 && (
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                {verdict.concernDetail.map((c) => (
+                                  <span key={c.concern} className="rounded-full border border-line px-3 py-1 text-[0.7rem]">
+                                    {c.concern} · {c.fit}% covered{c.ingredients[0] ? ` (${c.ingredients.slice(0, 2).join(', ')})` : ''}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ),
+                      },
                       {
                         title: 'Key Ingredients',
                         badge: verdict.keyIngredients.length,
                         content: verdict.keyIngredients.length ? (
                           <ul className="space-y-3">
-                            {verdict.keyIngredients.map((ing) => (
-                              <li key={ing.id}>
-                                <span className="text-ink">{ing.common_name || ing.inci_name}</span>
-                                <span className="text-ink2"> — {ing.plain_explanation || ing.function}</span>
-                              </li>
-                            ))}
+                            {verdict.keyIngredients.map((ing) => {
+                              const ai = explain.content?.key_ingredients?.find((k) => k.name.toLowerCase().includes((ing.common_name || ing.inci_name).toLowerCase()) || k.name.toLowerCase().includes(ing.inci_name.toLowerCase()))
+                              return (
+                                <li key={ing.id}>
+                                  <span className="text-ink">{ing.common_name || ing.inci_name}</span>
+                                  <span className="text-ink2"> — {ing.plain_explanation || ing.function || 'supporting ingredient'}</span>
+                                  {(ai?.why_for_you || ing.forYou) && (
+                                    <span className="mt-0.5 block text-gold2">For you: {ai?.why_for_you || ing.forYou}</span>
+                                  )}
+                                </li>
+                              )
+                            })}
                           </ul>
                         ) : 'No headline actives — this one is a quiet, supporting formula.',
                       },
@@ -205,14 +341,20 @@ export default function FormulaLab() {
                       {
                         title: 'Realistic Timeline',
                         content: (
-                          <ul className="space-y-2">
-                            {verdict.timeline.map((t, i) => (
-                              <li key={i}>
-                                <span className="text-gold2">{t.label}</span>
-                                <span className="text-ink2"> — {t.note}</span>
-                              </li>
-                            ))}
-                          </ul>
+                          <div className="space-y-3">
+                            <p className="text-ink">{verdict.timeline.headline}</p>
+                            {verdict.timeline.entries.length > 0 && (
+                              <ul className="space-y-2">
+                                {verdict.timeline.entries.map((t, i) => (
+                                  <li key={i}>
+                                    <span className="text-gold2">{t.window}</span>
+                                    <span className="text-ink2"> — {t.ingredient}{t.relevant ? ' (your goal)' : ''}{t.note ? `. ${t.note}` : ''}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                            {explain.content?.what_to_expect && <p className="italic">{explain.content.what_to_expect}</p>}
+                          </div>
                         ),
                       },
                     ]}
