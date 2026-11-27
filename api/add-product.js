@@ -2,7 +2,7 @@
 // The customer typed a product that is not in our catalog. Search the web for it, and if we
 // find a trustworthy ingredient list, add the brand/product/ingredients to the database.
 //   ready        → { productId } the product is in the database with ingredients (new or existing)
-//   not_found    → nothing trustworthy found (same query is not retried for a few hours)
+//   not_found    → nothing trustworthy found (same query is not retried for a few hours); reason: no-list | not-skincare
 //   in_progress  → the same search is already running; poll again
 //   busy         → daily budget used up
 //   unavailable  → server is not configured (missing keys)
@@ -27,8 +27,8 @@ export default async function handler(req, res) {
 
   const key = queryKey(query)
   let logId = null
-  const finish = async (status, productId = null) => {
-    if (logId != null) await db.from('web_lookup_log').update({ status, product_id: productId }).eq('id', logId)
+  const finish = async (status, productId = null, reason = null) => {
+    if (logId != null) await db.from('web_lookup_log').update({ status, product_id: productId, reason }).eq('id', logId)
   }
 
   try {
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
     logId = logRow.id
 
     const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 50_000)
+    const timer = setTimeout(() => controller.abort(), 55_000)
     let found
     try {
       found = await findNewProduct(query, CATEGORIES, { signal: controller.signal })
@@ -68,8 +68,8 @@ export default async function handler(req, res) {
     }
     const v = validateFoundProduct(query, found)
     if (!v.ok) {
-      await finish('not_found')
-      return res.json({ status: 'not_found' })
+      await finish('not_found', null, v.reason)
+      return res.json({ status: 'not_found', reason: /not-skincare|hair|supplement|tool/i.test(v.reason) ? 'not-skincare' : 'no-list' })
     }
 
     // Brand: reuse an existing row (case/punctuation-insensitive) or create one.
@@ -126,7 +126,7 @@ export default async function handler(req, res) {
     return res.json({ status: 'ready', productId: product.id, added: true, ingredientCount: saved.ingredientCount })
   } catch (e) {
     console.error('add-product failed', query, e?.message ?? e)
-    await finish('error').catch(() => {})
+    await finish('error', null, String(e?.message ?? e).slice(0, 160)).catch(() => {})
     return res.status(502).json({ status: 'error' })
   }
 }

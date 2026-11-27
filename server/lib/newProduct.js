@@ -3,7 +3,7 @@
 import { normalizeKey, productNameSimilar, isHttpsUrl } from './ingredients.js'
 
 // Same names the catalog already uses, so new products slot into existing filters.
-export const CATEGORIES = ['Cleanser', 'Toner/Mist', 'Active Serum', 'Moisturizer', 'Sunscreen', 'Mask/Treatment', 'Eye Care', 'Face Oil', 'Lip Care', 'Body Care']
+export const CATEGORIES = ['Cleanser', 'Toner/Mist', 'Active Serum', 'Moisturizer', 'Sunscreen', 'Mask/Treatment', 'Eye Care', 'Face Oil', 'Lip Care', 'Body Care', 'Cosmetics']
 
 // → cleaned query string, or null if it is not worth a paid web search.
 export function cleanQuery(input) {
@@ -20,7 +20,7 @@ export const queryKey = (q) => normalizeKey(q)
 // Keep only a result we trust enough to write into the database.
 // → { ok:true, brand, name, category, sourceUrl, raw } | { ok:false, reason }
 export function validateFoundProduct(query, f) {
-  if (!f || f.found !== true) return { ok: false, reason: 'not-found' }
+  if (!f || f.found !== true) return { ok: false, reason: String(f?.reason ?? 'not-found').slice(0, 160) }
   const brand = String(f.brand ?? '').replace(/\s+/g, ' ').trim()
   let name = String(f.product_name ?? '').replace(/\s+/g, ' ').trim()
   if (brand.length < 2 || brand.length > 60 || name.length < 3 || name.length > 120) return { ok: false, reason: 'bad-name' }

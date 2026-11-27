@@ -254,6 +254,11 @@ export default function FormulaLab() {
                             {explain.state === 'ready' && (
                               <>
                                 <p className="text-ink" style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem' }}>{explain.content.headline}</p>
+                                {explain.content.overview && (
+                                  <div className="space-y-3">
+                                    {explain.content.overview.split(/\n{2,}/).map((para, i) => <p key={i}>{para}</p>)}
+                                  </div>
+                                )}
                                 {explain.content.suits.length > 0 && (
                                   <div>
                                     <p className="smallcaps mb-1 text-[0.68rem] text-ink">Works for you</p>
@@ -264,6 +269,12 @@ export default function FormulaLab() {
                                   <div>
                                     <p className="smallcaps mb-1 text-[0.68rem] text-ink">Watch out</p>
                                     <ul className="list-disc space-y-1 pl-5">{explain.content.watch_out.map((t, i) => <li key={i}>{t}</li>)}</ul>
+                                  </div>
+                                )}
+                                {explain.content.use_tips?.length > 0 && (
+                                  <div>
+                                    <p className="smallcaps mb-1 text-[0.68rem] text-ink">How to use it</p>
+                                    <ul className="list-disc space-y-1 pl-5">{explain.content.use_tips.map((t, i) => <li key={i}>{t}</li>)}</ul>
                                   </div>
                                 )}
                               </>
@@ -312,6 +323,36 @@ export default function FormulaLab() {
                             })}
                           </ul>
                         ) : 'No headline actives — this one is a quiet, supporting formula.',
+                      },
+                      {
+                        title: 'Full ingredient list',
+                        badge: verdict.ingredients.length,
+                        content: (
+                          <ol className="space-y-3">
+                            {verdict.ingredients.map((ing, i) => {
+                              const tags = []
+                              if (ing.is_active) tags.push('active')
+                              if (ing.is_fragrance) tags.push('fragrance')
+                              if ((ing.comedogenic_rating ?? 0) >= 3) tags.push(`comedogenic ${ing.comedogenic_rating}/5`)
+                              if (ing.is_harmful_general) tags.push('flagged')
+                              if (profile?.skin_type && (ing.harmful_for_skin_types ?? []).some((t) => t.toLowerCase().includes(String(profile.skin_type).toLowerCase()))) tags.push(`can be harsh on ${String(profile.skin_type).toLowerCase()} skin`)
+                              return (
+                                <li key={`${ing.id}-${i}`} className="flex gap-3">
+                                  <span className="w-6 shrink-0 text-right text-[0.72rem] text-ink2">{ing.position ?? i + 1}</span>
+                                  <span>
+                                    <span className="text-ink">{ing.common_name || ing.inci_name}</span>
+                                    {ing.function && <span className="text-ink2"> · {ing.function}</span>}
+                                    {tags.length > 0 && <span className="text-gold2"> · {tags.join(' · ')}</span>}
+                                    <span className="block text-ink2">
+                                      {ing.plain_explanation || 'Newly added to our library — a plain-language note is coming.'}
+                                    </span>
+                                  </span>
+                                </li>
+                              )
+                            })}
+                            <li className="pl-9 text-[0.72rem] text-ink2">Listed in label order — earlier ingredients are present in larger amounts.</li>
+                          </ol>
+                        ),
                       },
                       {
                         title: 'Routine Conflicts',
