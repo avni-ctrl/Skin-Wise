@@ -33,6 +33,17 @@ export function cleanQuery(input) {
   return q
 }
 
+// A price read from the web: whole rupees between 30 and 50,000, otherwise ignored.
+export function cleanPrice(v) {
+  const n = Math.round(Number(v))
+  return Number.isFinite(n) && n >= 30 && n <= 50000 ? n : null
+}
+
+// The few longest words of a query — used to pull candidate rows out of the catalog.
+export function searchWords(query, n = 3) {
+  return [...new Set(tokens(query).filter((t) => t.length >= 3 && /^[a-z0-9]+$/.test(t)))].sort((a, b) => b.length - a.length).slice(0, n)
+}
+
 export const queryKey = (q) => normalizeKey(q)
 
 // Keep only a result we trust enough to write into the database.
@@ -56,7 +67,7 @@ export function validateFoundProduct(query, f) {
   // What we add must be what the customer typed, not a different product the search drifted to.
   if (!nameMatchesQuery(query, brand, name)) return { ok: false, reason: `different-product: model found "${brand} ${name}"`.slice(0, 160) }
 
-  return { ok: true, brand, name, category, sourceUrl: f.source_url, raw }
+  return { ok: true, brand, name, category, sourceUrl: f.source_url, raw, price: cleanPrice(f.price_inr) }
 }
 
 // Existing brand row for this name, ignoring case and punctuation (M.A.C = Mac = mac).
@@ -73,4 +84,22 @@ export function findSameProduct(products, name, brandName) {
       (p) => productNameSimilar(name, p.name, brandName) && productNameSimilar(p.name, name, brandName)
     ) ?? null
   )
+}
+
+// Dupe candidates suggested by the web: clean, dedupe, drop the product itself.
+export function cleanCandidates(list, target) {
+  const seen = new Set()
+  const out = []
+  const self = normalizeKey(`${target.brand} ${target.name}`)
+  for (const c of Array.isArray(list) ? list : []) {
+    const brand = String(c?.brand ?? '').replace(/\s+/g, ' ').trim()
+    const name = String(c?.product_name ?? '').replace(/\s+/g, ' ').trim()
+    if (brand.length < 2 || brand.length > 60 || name.length < 3 || name.length > 120) continue
+    const key = normalizeKey(`${brand} ${name}`)
+    if (seen.has(key) || key === self) continue
+    seen.add(key)
+    out.push({ brand, name, price_inr: cleanPrice(c?.price_inr) })
+    if (out.length >= 6) break
+  }
+  return out
 }

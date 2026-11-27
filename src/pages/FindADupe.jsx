@@ -6,6 +6,7 @@ import EchoBackdrop from '../components/EchoBackdrop'
 import ProductSearch from '../components/ProductSearch'
 import Footer from '../components/Footer'
 import { findDupes } from '../services/dupes'
+import { suggestDupes, addProductFromWeb } from '../services/lookup'
 import { addShelfItem } from '../services/userData'
 import { useAuth } from '../context/AuthContext'
 import { ease, spring } from '../lib/easing'
@@ -71,10 +72,12 @@ export default function FindADupe() {
   const [scanning, setScanning] = useState(false)
   const [result, setResult] = useState(null)
   const [addedIds, setAddedIds] = useState(new Set())
+  const [web, setWeb] = useState({ state: 'idle', done: 0, total: 0, message: '' }) // idle | searching | done | failed
 
   async function scan(product) {
     setScanning(true)
     setResult(null)
+    setWeb({ state: 'idle', done: 0, total: 0, message: '' })
     try {
       const res = await findDupes(product.id)
       // let the scanner breathe once — fast, never slow
@@ -85,6 +88,45 @@ export default function FindADupe() {
     } catch (e) {
       console.error(e)
       setScanning(false)
+    }
+  }
+
+  // Look beyond our library: the web suggests similar products, each one is read and saved, then we re-rank.
+  async function searchWebForDupes() {
+    if (!result?.target) return
+    const target = result.target
+    setWeb({ state: 'searching', done: 0, total: 0, message: 'Looking for similar products online…' })
+    const fail = (message) => setWeb({ state: 'failed', done: 0, total: 0, message })
+    const s = await suggestDupes(target.id)
+    if (s.status === 'busy') return fail('A lot of people are searching today. Please try again tomorrow.')
+    if (s.status === 'unavailable') return fail('Web search is not switched on yet. Please try again soon.')
+    if (s.status !== 'ready' || !s.candidates?.length) return fail('We could not find similar products online for this one.')
+
+    let done = 0
+    let added = 0
+    let stopped = false
+    const queue = [...s.candidates]
+    const step = (message) => setWeb({ state: 'searching', done, total: s.candidates.length, message })
+    step('Reading the labels of similar products…')
+    const worker = async () => {
+      while (queue.length && !stopped) {
+        const c = queue.shift()
+        const r = await addProductFromWeb(`${c.brand} ${c.name}`)
+        if (r.status === 'busy') stopped = true
+        if (r.status === 'ready' && r.added) added++
+        done++
+        step('Reading the labels of similar products…')
+      }
+    }
+    await Promise.all([worker(), worker(), worker()])
+
+    try {
+      const res = await findDupes(target.id)
+      setResult(res)
+      setWeb({ state: 'done', done, total: s.candidates.length, message: added ? `Added ${added} new product${added === 1 ? '' : 's'} to the library and re-ranked.` : 'Checked the web — nothing new to add.' })
+    } catch (e) {
+      console.error(e)
+      fail('Something went wrong while ranking. Please try again.')
     }
   }
 
@@ -185,6 +227,28 @@ export default function FindADupe() {
                   ))}
                 </div>
               )}
+
+              {/* beyond the library */}
+              <div className="mx-auto mt-10 max-w-[560px] text-center">
+                {web.state === 'searching' ? (
+                  <p className="text-[0.85rem] italic text-ink2" style={{ fontFamily: 'var(--font-display)' }} role="status">
+                    {web.message}{web.total ? ` (${web.done}/${web.total})` : ''} This can take a minute or two.
+                  </p>
+                ) : (
+                  <>
+                    <button
+                      onClick={searchWebForDupes}
+                      className="rounded-full border border-gold2 px-6 py-2.5 text-[0.8rem] text-gold2 transition-colors hover:bg-gold2 hover:text-bg"
+                    >
+                      {web.state === 'done' ? 'Search the web again' : 'Not enough? Search the web for more dupes'}
+                    </button>
+                    {web.message && (
+                      <p className="mt-3 text-[0.8rem] text-ink2" role="status">{web.message}</p>
+                    )}
+                  </>
+                )}
+                <p className="mt-3 text-[0.68rem] text-ink2">Prices are as listed online when a product was added, so check before you buy. Matches are scored from real ingredient lists.</p>
+              </div>
 
               {/* soft prompt AFTER results — never a gate */}
               {!session && result.dupes.length > 0 && (
