@@ -3,6 +3,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import lookup from '../api/lookup.js'
 import explain from '../api/explain.js'
+import suggestDupes from '../api/suggest-dupes.js'
 
 const mkRes = () => {
   const r = { code: 200, headers: {}, body: null }
@@ -12,7 +13,7 @@ const mkRes = () => {
   return r
 }
 
-for (const [name, fn] of [['lookup', lookup], ['explain', explain]]) {
+for (const [name, fn] of [['lookup', lookup], ['explain', explain], ['suggest-dupes', suggestDupes]]) {
   test(`${name}: rejects GET`, async () => {
     const res = mkRes(); await fn({ method: 'GET' }, res)
     assert.equal(res.code, 405)

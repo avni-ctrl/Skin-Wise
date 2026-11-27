@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { cleanQuery, validateFoundProduct, findBrand, findSameProduct, nameMatchesQuery, CATEGORIES } from '../server/lib/newProduct.js'
+import { cleanQuery, validateFoundProduct, findBrand, findSameProduct, nameMatchesQuery, cleanCandidates, cleanPrice, searchWords, CATEGORIES } from '../server/lib/newProduct.js'
 import { findNewProduct } from '../server/lib/webLookup.js'
 import handler from '../api/add-product.js'
 
@@ -83,4 +83,23 @@ test('a long pasted shop title matches the brand page\'s short name, but a gener
   assert.equal(nameMatchesQuery('Cetaphil oily skin cleanser', 'Cetaphil', 'Gentle Skin Cleanser'), false)
   const v = validateFoundProduct(long, { found: true, brand: '52 Sundaze', product_name: 'Collagen Glow SPF 50+ PA++++ Sunscreen', category: 'Sunscreen', source_url: 'https://52sundaze.com/p', ingredients_raw: 'Water, Glycerin, Niacinamide, Ceramide NP, Zinc Oxide, Panthenol' })
   assert.equal(v.ok, true)
+})
+
+test('prices and candidate lists are cleaned before use', () => {
+  assert.equal(cleanPrice('499'), 499)
+  assert.equal(cleanPrice(0), null)
+  assert.equal(cleanPrice('free'), null)
+  assert.equal(cleanPrice(9999999), null)
+  const list = cleanCandidates(
+    [
+      { brand: 'Aqualogica', product_name: 'Glow+ Dewy Sunscreen', price_inr: 349 },
+      { brand: 'Aqualogica', product_name: 'Glow+ Dewy Sunscreen', price_inr: 349 },
+      { brand: '52 Sundaze', product_name: 'Collagen Glow SPF 50' },
+      { brand: 'X', product_name: 'bad' },
+      'junk',
+    ],
+    { brand: '52 Sundaze', name: 'Collagen Glow SPF 50' }
+  )
+  assert.deepEqual(list, [{ brand: 'Aqualogica', name: 'Glow+ Dewy Sunscreen', price_inr: 349 }])
+  assert.deepEqual(searchWords('52 Sundaze Collagen Glow SPF 50+ Sunscreen').slice(0, 2), ['sunscreen', 'collagen'])
 })

@@ -24,6 +24,9 @@
     },
     "api/explain.js": {
       "maxDuration": 30
+    },
+    "api/suggest-dupes.js": {
+      "maxDuration": 60
     }
   }
 }

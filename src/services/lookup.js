@@ -52,3 +52,13 @@ export async function addProductFromWeb(query) {
   }
   return { status: 'not_found' }
 }
+
+// Ask the web for products similar to one we hold. Returns names only — each is then added via addProductFromWeb.
+export async function suggestDupes(productId) {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const data = await post('/api/suggest-dupes', { productId })
+    if (data.status !== 'in_progress') return data
+    await sleep(6000)
+  }
+  return { status: 'not_found' }
+}

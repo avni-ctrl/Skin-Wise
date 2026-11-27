@@ -9,7 +9,7 @@
 import { serviceClient, readBody } from '../server/lib/db.js'
 import { saveIngredientList } from '../server/lib/saveIngredients.js'
 import { findNewProduct } from '../server/lib/webLookup.js'
-import { CATEGORIES, cleanQuery, queryKey, validateFoundProduct, findBrand, findSameProduct } from '../server/lib/newProduct.js'
+import { CATEGORIES, cleanQuery, queryKey, validateFoundProduct, findBrand, findSameProduct, nameMatchesQuery, searchWords } from '../server/lib/newProduct.js'
 
 const MISS_COOLDOWN_MS = 6 * 60 * 60 * 1000
 const RUNNING_MS = 90 * 1000
@@ -33,6 +33,19 @@ export default async function handler(req, res) {
 
   try {
     const since = (ms) => new Date(Date.now() - ms).toISOString()
+
+    // Already in the catalog with a real ingredient list? Then no paid web search is needed.
+    const words = searchWords(query)
+    if (words.length) {
+      const { data: pool } = await db
+        .from('products')
+        .select('id, name, ingredients_status, brand:brands(name)')
+        .or(words.map((w) => `name.ilike.%${w}%`).join(','))
+        .in('ingredients_status', ['auto', 'verified'])
+        .limit(150)
+      const hit = (pool ?? []).find((p) => nameMatchesQuery(query, p.brand?.name ?? '', p.name))
+      if (hit) return res.json({ status: 'ready', productId: hit.id, added: false })
+    }
 
     // Same search just ran or is running → do not pay twice.
     const { data: recent, error: recentErr } = await db
@@ -97,13 +110,20 @@ export default async function handler(req, res) {
           return res.json({ status: 'not_found' })
         }
       }
+      if (v.price) await db.from('products').update({ price_inr: v.price, price_checked_at: new Date().toISOString() }).eq('id', same.id).is('price_inr', null)
       await finish('exists', same.id)
       return res.json({ status: 'ready', productId: same.id, added: false })
     }
 
     const { data: product, error: prodErr } = await db
       .from('products')
-      .insert({ brand_id: brand.id, name: v.name, category: v.category, ingredients_status: 'missing' })
+      .insert({
+        brand_id: brand.id,
+        name: v.name,
+        category: v.category,
+        ingredients_status: 'missing',
+        ...(v.price ? { price_inr: v.price, price_checked_at: new Date().toISOString() } : {}),
+      })
       .select('id')
       .single()
     if (prodErr) throw prodErr
