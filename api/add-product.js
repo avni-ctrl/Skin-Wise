@@ -69,7 +69,7 @@ export default async function handler(req, res) {
     const v = validateFoundProduct(query, found)
     if (!v.ok) {
       await finish('not_found', null, v.reason)
-      return res.json({ status: 'not_found', reason: /not-skincare|hair|supplement|tool/i.test(v.reason) ? 'not-skincare' : 'no-list' })
+      return res.json({ status: 'not_found', reason: /not-skincare|hair|supplement|tool/i.test(v.reason) ? 'not-skincare' : v.reason.startsWith('different-product') ? 'mismatch' : 'no-list' })
     }
 
     // Brand: reuse an existing row (case/punctuation-insensitive) or create one.

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { cleanQuery, validateFoundProduct, findBrand, findSameProduct, CATEGORIES } from '../server/lib/newProduct.js'
+import { cleanQuery, validateFoundProduct, findBrand, findSameProduct, nameMatchesQuery, CATEGORIES } from '../server/lib/newProduct.js'
 import { findNewProduct } from '../server/lib/webLookup.js'
 import handler from '../api/add-product.js'
 
@@ -24,7 +24,7 @@ test('a matching, well-formed result is accepted and the brand is stripped from 
 })
 
 test('rejects a different product, non-skincare, bad list and non-https source', () => {
-  assert.equal(validateFoundProduct('Cetaphil oily skin cleanser', { ...good, product_name: 'Gentle Skin Cleanser' }).reason, 'different-product')
+  assert.match(validateFoundProduct('Cetaphil oily skin cleanser', { ...good, product_name: 'Gentle Skin Cleanser' }).reason, /^different-product/)
   assert.equal(validateFoundProduct('Cetaphil oily skin cleanser', { ...good, category: 'Shampoo' }).reason, 'not-skincare')
   assert.equal(validateFoundProduct('Cetaphil oily skin cleanser', { ...good, ingredients_raw: 'Water' }).reason, 'bad-list')
   assert.equal(validateFoundProduct('Cetaphil oily skin cleanser', { ...good, source_url: 'http://x.com' }).reason, 'bad-source')
@@ -73,4 +73,14 @@ test('endpoint: 405, 400 and a safe 503 when not configured', async () => {
   delete process.env.SUPABASE_SERVICE_ROLE_KEY; delete process.env.ANTHROPIC_API_KEY
   res = mkRes(); await handler({ method: 'POST', body: { query: 'Cetaphil Oily Skin Cleanser' } }, res)
   assert.equal(res.code, 503); assert.equal(res.body.status, 'unavailable')
+})
+
+test('a long pasted shop title matches the brand page\'s short name, but a generic or different name does not', () => {
+  const long = '52 Sundaze Collagen Glow SPF 50+ PA++++ Sunscreen, Ceramides 3:1:1 Golden Ratio for Barrier Repair'
+  assert.equal(nameMatchesQuery(long, '52 Sundaze', 'Collagen Glow SPF 50+ PA++++ Sunscreen'), true)
+  assert.equal(nameMatchesQuery(long, '52 Sundaze', 'Sunscreen'), false)
+  assert.equal(nameMatchesQuery(long, '52 Sundaze', 'Matte Gel SPF 50 Sunscreen'), false)
+  assert.equal(nameMatchesQuery('Cetaphil oily skin cleanser', 'Cetaphil', 'Gentle Skin Cleanser'), false)
+  const v = validateFoundProduct(long, { found: true, brand: '52 Sundaze', product_name: 'Collagen Glow SPF 50+ PA++++ Sunscreen', category: 'Sunscreen', source_url: 'https://52sundaze.com/p', ingredients_raw: 'Water, Glycerin, Niacinamide, Ceramide NP, Zinc Oxide, Panthenol' })
+  assert.equal(v.ok, true)
 })
