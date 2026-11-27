@@ -120,7 +120,7 @@ export default function FindADupe() {
             }`}
             style={{ boxShadow: scanning ? '0 0 40px -8px color-mix(in srgb, var(--gold) 45%, transparent)' : 'none' }}
           >
-            <ProductSearch placeholder="Drop in the product you love…" onSelect={scan} />
+            <ProductSearch webAdd placeholder="Drop in the product you love…" onSelect={scan} />
             <AnimatePresence>
               {scanning && (
                 <motion.div

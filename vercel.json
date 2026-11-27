@@ -14,5 +14,16 @@
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/lookup.js": {
+      "maxDuration": 60
+    },
+    "api/add-product.js": {
+      "maxDuration": 60
+    },
+    "api/explain.js": {
+      "maxDuration": 30
+    }
+  }
 }
