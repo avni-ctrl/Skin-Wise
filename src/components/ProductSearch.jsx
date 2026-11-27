@@ -55,7 +55,9 @@ export default function ProductSearch({ placeholder = 'What product are you curi
       }
     }
     const messages = {
-      not_found: 'We could not find a trustworthy ingredient list for that. Try the full name with the brand, e.g. “Brand + product + type”.',
+      not_found: res.reason === 'not-skincare'
+        ? 'That looks like something we do not analyse (hair care, supplements or tools). Try a skincare or makeup product.'
+        : 'We could not find a trustworthy ingredient list for that. Try the full name with the brand, e.g. “Brand + product + type”.',
       busy: 'A lot of people are searching today. Please try again tomorrow.',
       unavailable: 'Web search is not switched on yet. Please try again soon.',
     }
