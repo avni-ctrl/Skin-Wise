@@ -3,29 +3,48 @@ import { supabase } from '../lib/supabase'
 const PRODUCT_FIELDS =
   'id, name, category, price_inr, pao_months, pao_heat_adjusted, is_fragrance_free, hype_score, ingredient_quality_score, ingredients_status, ingredients_source_url, brand:brands(id, name, country)'
 
-// Search by product name OR brand name.
+// Search by product name OR brand name, so "Cetaphil oily skin cleanser" finds the product
+// even though the brand lives in a different table. Words are matched one by one.
+const norm = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim()
+
 export async function searchProducts(query, limit = 12) {
   const q = query.trim()
   if (!q) return []
 
-  const [byName, brandRows] = await Promise.all([
-    supabase.from('products').select(PRODUCT_FIELDS).ilike('name', `%${q}%`).limit(limit),
-    supabase.from('brands').select('id').ilike('name', `%${q}%`).limit(8),
-  ])
-  if (byName.error) throw byName.error
+  const words = [...new Set(norm(q).split(' ').filter((w) => w.length >= 2))]
+  const longest = [...words].sort((a, b) => b.length - a.length).slice(0, 3)
 
-  let results = byName.data ?? []
-  const brandIds = (brandRows.data ?? []).map((b) => b.id)
-  if (brandIds.length && results.length < limit) {
-    const { data } = await supabase
-      .from('products')
-      .select(PRODUCT_FIELDS)
-      .in('brand_id', brandIds)
-      .limit(limit - results.length)
-    const seen = new Set(results.map((p) => p.id))
-    results = results.concat((data ?? []).filter((p) => !seen.has(p.id)))
+  const [byPhrase, brandRows, ...byWord] = await Promise.all([
+    supabase.from('products').select(PRODUCT_FIELDS).ilike('name', `%${q}%`).limit(limit),
+    supabase.from('brands').select('id, name').or(longest.map((w) => `name.ilike.%${w}%`).join(',') || `name.ilike.%${q}%`).limit(12),
+    ...longest.map((w) => supabase.from('products').select(PRODUCT_FIELDS).ilike('name', `%${w}%`).limit(40)),
+  ])
+  if (byPhrase.error) throw byPhrase.error
+
+  const pool = new Map()
+  for (const p of byPhrase.data ?? []) pool.set(p.id, p)
+  for (const r of byWord) for (const p of r.data ?? []) pool.set(p.id, p)
+
+  // Products of any brand whose name appears in the query.
+  const brandIds = (brandRows.data ?? []).filter((b) => norm(q).includes(norm(b.name)) || norm(b.name).includes(norm(q))).map((b) => b.id)
+  if (brandIds.length) {
+    const { data } = await supabase.from('products').select(PRODUCT_FIELDS).in('brand_id', brandIds).limit(80)
+    for (const p of data ?? []) pool.set(p.id, p)
   }
-  return results
+
+  // Rank by how many of the typed words appear in "brand + product name".
+  const scored = [...pool.values()].map((p) => {
+    const hay = ` ${norm(`${p.brand?.name ?? ''} ${p.name}`)} `
+    const hits = words.filter((w) => hay.includes(` ${w}`)).length
+    return { p, score: words.length ? hits / words.length : 0 }
+  })
+  const best = Math.max(0, ...scored.map((x) => x.score))
+  // Keep only good matches; if even the best one is weak, show nothing so the web option appears.
+  return scored
+    .filter((x) => x.score >= Math.max(0.6, best - 0.2))
+    .sort((a, b) => b.score - a.score || (a.p.ingredients_status === 'missing') - (b.p.ingredients_status === 'missing'))
+    .slice(0, limit)
+    .map((x) => x.p)
 }
 
 export async function getProduct(productId) {

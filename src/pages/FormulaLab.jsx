@@ -136,7 +136,7 @@ export default function FormulaLab() {
       />
       <div className="mx-auto max-w-[1000px] pt-14">
         <div className="mt-1">
-          <ProductSearch onSelect={analyze} />
+          <ProductSearch webAdd onSelect={analyze} />
         </div>
 
         {!session && (

@@ -125,7 +125,7 @@ export function matchIngredients(items, dictionary) {
 // Does the page's product title plausibly match the product we asked for?
 // Guards against grabbing the ingredients of a different variant.
 const FILLER = new Set(['the', 'a', 'an', 'for', 'with', 'and', 'of', 'in', 'skin', 'face', 'pack', 'ml', 'g', 'gm', 'oz'])
-export function productNameSimilar(requested, found, brand = '') {
+export function productNameSimilar(requested, found, brand = '', min = 0.6) {
   const tokens = (s) =>
     normalizeKey(s)
       .split(' ')
@@ -135,7 +135,7 @@ export function productNameSimilar(requested, found, brand = '') {
   if (!want.length) return true
   const have = new Set(tokens(found))
   const hits = want.filter((t) => have.has(t)).length
-  return hits / want.length >= 0.6
+  return hits / want.length >= min
 }
 
 export function isHttpsUrl(u) {

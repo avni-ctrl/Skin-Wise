@@ -41,3 +41,14 @@ export async function getExplanation(productId, profile) {
       : null,
   })
 }
+
+// The product is not in our catalog: search the web, add it to the database, return its id.
+// Can take up to ~a minute the first time; the second person who searches it gets it instantly.
+export async function addProductFromWeb(query) {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const data = await post('/api/add-product', { query })
+    if (data.status !== 'in_progress') return data
+    await sleep(6000)
+  }
+  return { status: 'not_found' }
+}
