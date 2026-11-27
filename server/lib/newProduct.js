@@ -2,6 +2,24 @@
 // No network, no database — unit-tested in scripts/test-add-product.mjs.
 import { normalizeKey, productNameSimilar, isHttpsUrl } from './ingredients.js'
 
+const FILLER = new Set(['the', 'a', 'an', 'for', 'with', 'and', 'of', 'in', 'ml', 'g', 'gm', 'oz', 'pack'])
+const tokens = (s) => normalizeKey(s).split(' ').filter((t) => t && !FILLER.has(t))
+
+// Is the product the web gave us the one the customer typed?
+// Customers often paste a long shop title ("… Ceramides 3:1:1 Golden Ratio for Barrier Repair") while the
+// brand's page uses the short name, so we accept a match in EITHER direction — but never a generic name
+// (one or two words) that merely appears inside the query.
+export function nameMatchesQuery(query, brand, name) {
+  const want = tokens(query)
+  const have = tokens(`${brand} ${name}`)
+  if (!want.length || !have.length) return false
+  const wantSet = new Set(want)
+  const haveSet = new Set(have)
+  const forward = want.filter((t) => haveSet.has(t)).length / want.length
+  const reverse = have.filter((t) => wantSet.has(t)).length / have.length
+  return forward >= 0.8 || (reverse >= 0.85 && tokens(name).length >= 3)
+}
+
 // Same names the catalog already uses, so new products slot into existing filters.
 export const CATEGORIES = ['Cleanser', 'Toner/Mist', 'Active Serum', 'Moisturizer', 'Sunscreen', 'Mask/Treatment', 'Eye Care', 'Face Oil', 'Lip Care', 'Body Care', 'Cosmetics']
 
@@ -36,7 +54,7 @@ export function validateFoundProduct(query, f) {
   if (!isHttpsUrl(f.source_url)) return { ok: false, reason: 'bad-source' }
 
   // What we add must be what the customer typed, not a different product the search drifted to.
-  if (!productNameSimilar(query, `${brand} ${name}`, '', 0.8)) return { ok: false, reason: 'different-product' }
+  if (!nameMatchesQuery(query, brand, name)) return { ok: false, reason: `different-product: model found "${brand} ${name}"`.slice(0, 160) }
 
   return { ok: true, brand, name, category, sourceUrl: f.source_url, raw }
 }
